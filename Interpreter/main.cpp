@@ -621,10 +621,14 @@ class Parser {
 
 // Main function
 int main() {
-    std::vector<Token> tokenlist;
-    string fileName ="programming_assignment_3-test_file_1.c";
-    ignoreComments(fileName,"test_file3.c");
-    tokenlist=Tokenize("test_file3.c");
-
+    vector<Token> tokenlist;
+    string fileName ="programming_assignment_3-test_file_";
+    string tokenizefile="test_file";
+    for(int i=1; i <11; i++)
+    {
+        ignoreComments(fileName+std::to_string(i)+".c", tokenizefile+std::to_string(i)+".c");
+        tokenlist = Tokenize(tokenizefile+std::to_string(i)+".c");
+        continue;
+    }
     return 0;
 }
