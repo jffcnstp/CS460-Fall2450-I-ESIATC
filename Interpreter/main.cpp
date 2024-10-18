@@ -437,12 +437,28 @@ void parseBracket() {
         else {
             Errorstatement("Bracket", tokenused);
         }
+    nextToken();
     }
 
-
-    void parseBrace() {
+        // PA3: RDP - Brace function
+    // Individual function soley designed for handling braces and things in-between
+    // Parameters: braceCounter, helps keep track of number of '{' there are
+    // braceLocation, helps keep track of the line number of a given brace
+    void parseBrace(int braceCounter, vector<int> braceLocation) {
         // Add some kind of node
         Token tokenused = peek();
+
+        // Expecting a '{'
+        if (match("L_BRACE")) {
+            braceCounter++; // increment
+            braceLocation.push_back(tokenused.getLine()); // Push to vector
+            tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+        }
+        else {
+            Errorstatement("Brace", tokenused);
+        }
+
         // Everything else
         if(!match("L_BRACE") || !match("R_BRACE")) {
             tree.insertSibling(new Node(tokenused));
@@ -454,11 +470,18 @@ void parseBracket() {
 
         // Expecting '}'
         if (match("R_BRACE")) {
+            braceCounter--; // decrement
+            braceLocation.push_back(tokenused.getLine()); // Push to vector
             tree.insertChild(new Node(tokenused));
             tokenused = nextToken();
         }
             // Missing '}'
         else {
+            Errorstatement("Brace", tokenused);
+        }
+        
+        // Checks to see if braces are being used properly
+        if (braceCounter % 2 != 0) {
             Errorstatement("Brace", tokenused);
         }
         nextToken();
