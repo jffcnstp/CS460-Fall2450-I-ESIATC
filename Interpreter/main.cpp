@@ -383,80 +383,6 @@ public:
     }
 
 
-<<<<<<< HEAD
-//    /* PA3: RDP individual functions */
-//// PA3:RDP - Parenthesis function
-//// Individual function soley designed for handling parenthesis
-//    void parseParenthesis() {
-//        // init token
-//        Token tokenused = peek();
-//
-//        // Expecting a '('
-//        if (tokenused.getType() == "(" && keywordcheck(tokenused.getName()) ==LParen) {
-//            tree.insertSibling(new Node(tokenused));
-//            tokenused = nextToken();
-//        }
-//        else {
-//            Errorstatement("Parenthesis", tokenused);
-//        }
-//
-//        // Everything in the middle of the parenthesis
-//        // TODO: Add an and statement that checks the keyword
-//        if (tokenused.getType() != "(" || tokenused.getName() != ")") {
-//            tree.insertSibling(new Node(tokenused));
-//            tokenused = nextToken();
-//        }
-//        else {
-//            Errorstatement("Parenthesis", tokenused);
-//        }
-//
-//        // Expecting ')'
-//        if (tokenused.getType() == ")" && keywordcheck(tokenused.getName()) ==RParen) {
-//            tree.insertChild(new Node(tokenused));
-//            tokenused = nextToken();
-//        }
-//        else {
-//            Errorstatement("Parenthesis",tokenused);
-//        }
-//
-//        nextToken();
-//    }
-=======
-        // Expecting a '('
-        if (match("L_PAREN")) {
-
-            tree.insertSibling(new Node(tokenused));
-            tokenused = nextToken();
-        }
-        else {
-            Errorstatement("Parenthesis", tokenused);
-        }
-
-        // Everything in the middle of the parenthesis
-
-        if (!match("L_PAREN") || !match("R_PAREN")) {
-
-            tree.insertSibling(new Node(tokenused));
-            tokenused = nextToken();
-        }
-        else {
-            Errorstatement("Parenthesis", tokenused);
-        }
-
-        // Expecting ')'
-        if (match("R_PAREN")) {
-            tree.insertChild(new Node(tokenused));
-            tokenused = nextToken();
-        }
-        else {
-            Errorstatement("Parenthesis",tokenused);
-        }
-
-        nextToken();
-    }
->>>>>>> origin/main
-
-
     // PA3: RDP - Bracket function
     // Individual function soley designed for handling brackets
 void parseBracket() {
@@ -473,13 +399,6 @@ void parseBracket() {
             Errorstatement("Bracket", tokenused);
         }
 
-<<<<<<< HEAD
-        // Everything else
-        // TODO: Add an and statement that checks the keyword
-        if (tokenused.getType() != "[" || tokenused.getType() != "]") {
-=======
-        //TODO: Account for both negative integer error and numerical calculation
-        // if current token is an integer
 
         // Negative Integer error
         if(match("MINUS")) {
@@ -501,7 +420,6 @@ void parseBracket() {
         // Everything else
 
         if (!match("L_BRACKET") || !match("R_BRACKET")) {
->>>>>>> origin/main
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -519,54 +437,12 @@ void parseBracket() {
         else {
             Errorstatement("Bracket", tokenused);
         }
-<<<<<<< HEAD
     }
 
-        // PA3: RDP - Brace function
-    // Individual function soley designed for handling braces
-    void parseBrace(int & counter,vector<int> &location) {
-=======
-        nextToken();
-    }
 
-        // PA3: RDP - Brace function
-    // Individual function soley designed for handling braces and things in-between
     void parseBrace() {
->>>>>>> origin/main
         // Add some kind of node
         Token tokenused = peek();
-
-        // Expecting a '{'
-        if (match("L_BRACE")) {
-<<<<<<< HEAD
-            tree.insertChild(new Node(tokenused));
-            counter+=1;
-            location.push_back(tokenused.getLine());
-=======
-            tree.insertSibling(new Node(tokenused));
->>>>>>> origin/main
-            tokenused = nextToken();
-        }
-        if(match("R_BRACE"))
-        {
-            tree.insertChild(new Node(tokenused));
-            counter-=1;
-            if(counter<0)
-            {
-                Errorstatement("invalid R_BRACE",tokenused);
-            }
-            else {
-                location.pop_back();
-                tokenused = nextToken();
-            }
-        }
-
-<<<<<<< HEAD
-
-
-
-
-=======
         // Everything else
         if(!match("L_BRACE") || !match("R_BRACE")) {
             tree.insertSibling(new Node(tokenused));
@@ -586,7 +462,6 @@ void parseBracket() {
             Errorstatement("Brace", tokenused);
         }
         nextToken();
->>>>>>> origin/main
     }
 
 
@@ -595,13 +470,6 @@ void parseBracket() {
     void parseSemicolon() {
         // Init token
         Token tokenused = peek();
-<<<<<<< HEAD
-
-        if (tokenused.getType() == ";" && keywordcheck(tokenused.getName() == ";")) {
-            tree.insertChild(new Node(tokenused));
-            tokenused = nextToken();
-        }
-=======
 
         if (tokenused.getType() == ";" && match("SEMICOLON")) {
             tree.insertChild(new Node(tokenused));
@@ -611,7 +479,7 @@ void parseBracket() {
             Errorstatement("Semicolon", tokenused);
         }
         nextToken();
->>>>>>> origin/main
+
     }
 
     void Errorstatement(string fromwhere,Token tokenused)
