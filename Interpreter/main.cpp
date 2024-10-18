@@ -398,12 +398,12 @@ public:
             //parseBoolean();
 
             if (tokenused.getType() == "R_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
-                tree.insertSibling(new Node(tokenused));
+                tree.insertChild(new Node(tokenused));
             else
                 Errorstatement("If", tokenused);
             tokenused = nextToken();
-
         }
+
         else if (tokenused.getType() == "While" && keywordcheck(tokenused.getName()) == Conditional) {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
@@ -417,7 +417,7 @@ public:
             //parseBoolean();
 
             if (tokenused.getType() == "R_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
-                tree.insertSibling(new Node(tokenused));
+                tree.insertChild(new Node(tokenused));
             else
                 Errorstatement("While", tokenused);
             tokenused = nextToken();
@@ -443,7 +443,7 @@ public:
         //parseBoolean()
 
         if (tokenused.getType() == "R_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
-            tree.insertSibling(new Node(tokenused));
+            tree.insertChild(new Node(tokenused));
         else
             Errorstatement("Else", tokenused);
         tokenused = nextToken();
