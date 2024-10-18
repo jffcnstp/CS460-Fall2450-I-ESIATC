@@ -379,7 +379,6 @@ public:
                 Errorstatement("String", tokenused);
             tokenused = nextToken();
         }
-        nextToken();
     }
 
     //also for while statements?
