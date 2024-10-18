@@ -264,7 +264,6 @@ class Parser {
         }
 
         // Everything in the middle of the parenthesis
-        // TODO: Add an and statement that checks the keyword
         if (tokenused.getType() != "(" || tokenused.getName() != ")") {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
@@ -301,8 +300,22 @@ void parseBracket() {
             Errorstatement("Bracket", tokenused);
         }
 
+        //TODO: Account for both negative integer error and numerical calculation
+        // Negative Integer error
+        if(match("MINUS")) {
+            Errorstatement("Bracket",tokenused);
+        }
+
+        // Numerical Expression case
+        if(match("INTEGER")) {
+            parseNumerical();
+            tokenused = nextToken();
+        }
+        else {
+            Errorstatement("Bracket",tokenused);
+        }
+
         // Everything else
-        // TODO: Add an and statement that checks the keyword
         if (tokenused.getType() != "[" || tokenused.getType() != "]") {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
@@ -320,6 +333,7 @@ void parseBracket() {
         else {
             Errorstatement("Bracket", tokenused);
         }
+    nextToken();
     }
 
         // PA3: RDP - Brace function
@@ -338,7 +352,6 @@ void parseBracket() {
         }
 
         // Everything else
-        // TODO: add an and statement that checks the keyword
         if(tokenused.getType() != "{" || tokenused.getType() != "}") {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
@@ -356,6 +369,7 @@ void parseBracket() {
         else {
             Errorstatement("Brace", tokenused);
         }
+        nextToken();
     }
 
 
@@ -369,6 +383,7 @@ void parseBracket() {
             tree.insertChild(new Node(tokenused));
             tokenused = nextToken();
         }
+        nextToken();
     }
 
 
