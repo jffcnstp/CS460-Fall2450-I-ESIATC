@@ -203,6 +203,45 @@ class Parser {
 
         nextToken();
     }
+
+    //this function is called when the token is a string (quote -> string -> quote)
+    void parseString() {
+        //i assume that at this point, the current token is known to be a DblQuote or SglQuote
+        Token tokenused = peek();
+        if (tokenused.getType()=="DOUBLE_QUOTE" && keywordcheck(tokenused.getName()) == Identifier) {
+            tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+
+            if (tokenused.getType() == "STRING" && keywordcheck(tokenused.getName()) == Identifier)
+                tree.insertSibling(new Node(tokenused));
+            else
+                Errorstatement("String", tokenused);
+            tokenused = nextToken();
+
+            if (tokenused.getType() == "DOUBLE_QUOTE" && keywordcheck(tokenused.getName()) == Identifier)
+                tree.insertSibling(new Node(tokenused));
+            else
+                Errorstatement("String", tokenused);
+            tokenused = nextToken();
+        }
+        else if (tokenused.getType()=="SINGLE_QUOTE" && keywordcheck(tokenused.getName()) == Identifier) {
+            tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+
+            if (tokenused.getType() == "STRING" && keywordcheck(tokenused.getName()) == Identifier)
+                tree.insertSibling(new Node(tokenused));
+            else
+                Errorstatement("String", tokenused);
+            tokenused = nextToken();
+
+            if (tokenused.getType() == "SINGLE_QUOTE" && keywordcheck(tokenused.getName()) == Identifier)
+                tree.insertSibling(new Node(tokenused));
+            else
+                Errorstatement("String", tokenused);
+            tokenused = nextToken();
+        }
+        nextToken();
+    }
     
     void Errorstatement(string fromwhere,Token tokenused)
     {
