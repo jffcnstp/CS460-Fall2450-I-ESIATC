@@ -258,7 +258,6 @@ void parseBracket() {
         }
 
         // Everything else
-        // TODO: Add an and statement that checks the keyword
         if ((tokenused.getType() != "[" || tokenused.getType() != "]") &&
         (!match("L_BRACKET") || !match("R_BRACKET"))) {
             tree.insertSibling(new Node(tokenused));
@@ -277,6 +276,7 @@ void parseBracket() {
         else {
             Errorstatement("Bracket", tokenused);
         }
+        nextToken();
     }
 
         // PA3: RDP - Brace function
@@ -313,6 +313,7 @@ void parseBracket() {
         else {
             Errorstatement("Brace", tokenused);
         }
+        nextToken();
     }
 
 
@@ -329,6 +330,7 @@ void parseBracket() {
         else {
             Errorstatement("Semicolon", tokenused);
         }
+        nextToken();
     }
 
     void Errorstatement(string fromwhere,Token tokenused)
