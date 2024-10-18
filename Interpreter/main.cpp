@@ -256,6 +256,7 @@ class Parser {
 
         // Expecting a '('
         if (match("L_PAREN")) {
+
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -264,7 +265,9 @@ class Parser {
         }
 
         // Everything in the middle of the parenthesis
+
         if (!match("L_PAREN") || !match("R_PAREN")) {
+
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -292,6 +295,7 @@ void parseBracket() {
         Token tokenused = peek();
 
         // Expecting a '['
+
         if (match("L_BRACKET")) {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
@@ -321,6 +325,7 @@ void parseBracket() {
 
 
         // Everything else
+
         if (!match("L_BRACKET") || !match("R_BRACKET")) {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
@@ -330,6 +335,7 @@ void parseBracket() {
         }
 
         // Expecting ']'
+
         if (match("R_BRACKET")) {
             tree.insertChild(new Node(tokenused));
             tokenused = nextToken();
