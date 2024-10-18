@@ -11,7 +11,8 @@ using namespace std;
 std::string typekeyword[]={"int","bool","char","void"};
 std::string conditionalkeyword[]={"if","for","while","else"};
 
-enum keywords{Identifier=0,Type=1,Conditional=2};
+
+enum keywords{Identifier=0,Type=1,Conditional=2,RETURN=3};
 // Node of the LCRS Tree
 struct Node {
     Token data;
@@ -94,12 +95,10 @@ public:
 };
 
 
-// Token struct
-
 
 
 class Parser {
-    public:
+public:
     std::vector<Token> tokens;
     int current = 0;
     LCRSTree tree;
@@ -129,7 +128,7 @@ class Parser {
     }
 
     bool match(const string& type) {
-        if (peek().type == type) {
+        if (peek().getType() == type) {
             nextToken();
             return true;
         }
@@ -155,13 +154,128 @@ class Parser {
             if(name==word)
                 return Conditional;
         }
+        if(name == "return")
+        {
+            return RETURN;
+        }
         return Identifier;
     }
 
-    //this function is called when the token is found to be a function
+    //THE MAIN FUNCTION FOR BUILDING THE CONCRETE SYNTAX TREE
+    void buildCST()
+    {
+        int bracecounter=0;
+        vector<int> bracelocation;
+
+        Token currenttoken=peek();
+        while(current < tokens.size())
+        {
+            if(match("FUNCTION"))
+                parseFunctionDeclaration();
+            if(match("IDENTIFIER"))
+            {
+                int keyword=keywordcheck(peek().getName());
+                switch(keyword)
+                {
+                    case(Type):
+                    {
+                        parseVariableDeclaration();
+                    }
+                    case(Identifier):
+                    {
+                        //variableoperation
+                        //functioncall
+                    }
+                    case(RETURN):
+                    {
+                        //returnstatement
+                    }
+                }
+            }
+            if(match("PROCEDURE"))
+            {
+                parseProcedure();
+            }
+            if(match("IF")||match("WHILE"))
+            {
+                //parseiforwhile statement
+            }
+            if(match("ELSE"))
+            {
+                //parse else
+            }
+            if(match("FOR"))
+            {
+
+            }
+
+            //procedure declaration
+            if(match("SEMICOLON"))
+            {parseSemicolon();}
+
+            if(match("L_BRACE") || match("R_BRACE"))
+            {parseBrace(bracecounter,bracelocation);}
+
+        }
+
+        if(bracecounter>0)
+        {
+            cout<<"missing R_BRACE for "<<bracecounter<<" L_BRACE at lines: ";
+            for(auto &number : bracelocation)
+            {
+                cout<<number<<" ";
+            }
+            exit(-1);
+        }
+    }
+    // parses tokens expecting the syntax for procedure when the token found is PROCEDURE
+    void parseProcedure()
+    {
+        tree.insertChild(new Node(peek()));
+        Token tokenused=nextToken();
+
+        if(match("IDENTIFIER"))
+        {
+            tree.insertSibling(new Node(tokenused));
+            tokenused=nextToken();
+        }
+        else
+            Errorstatement("Procedure",tokenused);
+
+        if(match("L_PAREN"))
+        {
+            tree.insertSibling(new Node(tokenused));
+            tokenused=nextToken();
+        }
+        else
+            Errorstatement("Procedure",tokenused);
+
+        if(match("IDENTIFIER"))
+        {
+            //THIS ONLY WORKS IF THE PROCEDURE IS MAIN.  IF HE MAKES A PROCEDURE THAT HAS DATA TYPES OR IS A FUNCTION DECLARATION CHANGE THIS
+            tree.insertSibling(new Node(tokenused));
+            tokenused=nextToken();
+        }
+        else
+            Errorstatement("Procedure",tokenused);
+
+        if(match("R_PAREN"))
+        {
+            tree.insertSibling(new Node(tokenused));
+            tokenused=nextToken();
+        }
+        else
+            Errorstatement("Procedure",tokenused);
+
+
+    }
+
+
+    //this function is called when the token is found to be FUNCTION
     void parseFunctionDeclaration()
     {
         Token tokenused=peek();
+        bool multipleparameters=true;
         tree.insertChild(new Node(tokenused)); //add the function to the tree
         tokenused=nextToken();
 
@@ -183,19 +297,28 @@ class Parser {
         else
             Errorstatement("FunctionDeclaration",tokenused);
         tokenused=nextToken();
-        
-        if(tokenused.getType()=="IDENTIFIER" && keywordcheck(tokenused.getName()) ==Type)
-            tree.insertSibling(new Node(tokenused));
-        else
-            Errorstatement("FunctionDeclaration",tokenused);
-        tokenused=nextToken();
+        while(multipleparameters==true)
+        {
+            multipleparameters = false;
+            if (tokenused.getType() == "IDENTIFIER" && keywordcheck(tokenused.getName()) == Type)
+                tree.insertSibling(new Node(tokenused));
+            else
+                Errorstatement("FunctionDeclaration", tokenused);
+            tokenused = nextToken();
 
-        if(tokenused.getType()=="IDENTIFIER" && keywordcheck(tokenused.getName()) ==Identifier)
-            tree.insertSibling(new Node(tokenused));
-        else
-            Errorstatement("FunctionDeclaration",tokenused);
-        tokenused=nextToken();
+            if (tokenused.getType() == "IDENTIFIER" && keywordcheck(tokenused.getName()) == Identifier)
+                tree.insertSibling(new Node(tokenused));
+            else
+                Errorstatement("FunctionDeclaration", tokenused);
+            tokenused = nextToken();
 
+            if(match("COMMA"))
+            {
+                tree.insertSibling((new Node(peek())));
+                tokenused=nextToken();
+                multipleparameters = true;
+            }
+        }
         if(tokenused.getType()=="R_PAREN")
             tree.insertSibling(new Node(tokenused));
         else
@@ -204,6 +327,19 @@ class Parser {
         nextToken();
     }
 
+    void parseVariableDeclaration()
+    {
+        tree.insertChild(new Node(peek()));
+        Token tokenused = nextToken();
+
+        if(match("IDENTIFIER") && keywordcheck(tokenused.getName())==0)
+        {
+
+        }
+        else
+            Errorstatement("VariableDeclaration",tokenused);
+
+    }
 
     //this function is called when the token is a string (quote -> string -> quote)
     void parseString() {
@@ -246,43 +382,44 @@ class Parser {
         nextToken();
     }
     
-=======
-    /* PA3: RDP individual functions */
-// PA3:RDP - Parenthesis function
-// Individual function soley designed for handling parenthesis
-    void parseParenthesis() {
-        // init token
-        Token tokenused = peek();
 
-        // Expecting a '('
-        if (tokenused.getType() == "(" && keywordcheck(tokenused.getName()) ==LParen) {
-            tree.insertSibling(new Node(tokenused));
-            tokenused = nextToken();
-        }
-        else {
-            Errorstatement("Parenthesis", tokenused);
-        }
-
-        // Everything in the middle of the parenthesis
-        if (tokenused.getType() != "(" || tokenused.getName() != ")") {
-            tree.insertSibling(new Node(tokenused));
-            tokenused = nextToken();
-        }
-        else {
-            Errorstatement("Parenthesis", tokenused);
-        }
-
-        // Expecting ')'
-        if (tokenused.getType() == ")" && keywordcheck(tokenused.getName()) ==RParen) {
-            tree.insertChild(new Node(tokenused));
-            tokenused = nextToken();
-        }
-        else {
-            Errorstatement("Parenthesis",tokenused);
-        }
-
-        nextToken();
-    }
+//    /* PA3: RDP individual functions */
+//// PA3:RDP - Parenthesis function
+//// Individual function soley designed for handling parenthesis
+//    void parseParenthesis() {
+//        // init token
+//        Token tokenused = peek();
+//
+//        // Expecting a '('
+//        if (tokenused.getType() == "(" && keywordcheck(tokenused.getName()) ==LParen) {
+//            tree.insertSibling(new Node(tokenused));
+//            tokenused = nextToken();
+//        }
+//        else {
+//            Errorstatement("Parenthesis", tokenused);
+//        }
+//
+//        // Everything in the middle of the parenthesis
+//        // TODO: Add an and statement that checks the keyword
+//        if (tokenused.getType() != "(" || tokenused.getName() != ")") {
+//            tree.insertSibling(new Node(tokenused));
+//            tokenused = nextToken();
+//        }
+//        else {
+//            Errorstatement("Parenthesis", tokenused);
+//        }
+//
+//        // Expecting ')'
+//        if (tokenused.getType() == ")" && keywordcheck(tokenused.getName()) ==RParen) {
+//            tree.insertChild(new Node(tokenused));
+//            tokenused = nextToken();
+//        }
+//        else {
+//            Errorstatement("Parenthesis",tokenused);
+//        }
+//
+//        nextToken();
+//    }
 
 
     // PA3: RDP - Bracket function
@@ -300,22 +437,8 @@ void parseBracket() {
             Errorstatement("Bracket", tokenused);
         }
 
-        //TODO: Account for both negative integer error and numerical calculation
-        // Negative Integer error
-        if(match("MINUS")) {
-            Errorstatement("Bracket",tokenused);
-        }
-
-        // Numerical Expression case
-        if(match("INTEGER")) {
-            parseNumerical();
-            tokenused = nextToken();
-        }
-        else {
-            Errorstatement("Bracket",tokenused);
-        }
-
         // Everything else
+        // TODO: Add an and statement that checks the keyword
         if (tokenused.getType() != "[" || tokenused.getType() != "]") {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
@@ -333,43 +456,39 @@ void parseBracket() {
         else {
             Errorstatement("Bracket", tokenused);
         }
-    nextToken();
     }
 
         // PA3: RDP - Brace function
     // Individual function soley designed for handling braces
-    void parseBrace() {
+    void parseBrace(int & counter,vector<int> &location) {
         // Add some kind of node
         Token tokenused = peek();
 
         // Expecting a '{'
-        if (tokenused.getType() == "{" && keywordcheck(tokenused.getName()) == LBrace) {
-            tree.insertSibling(new Node(tokenused));
-            tokenused = nextToken();
-        }
-        else {
-            Errorstatement("Brace", tokenused);
-        }
-
-        // Everything else
-        if(tokenused.getType() != "{" || tokenused.getType() != "}") {
-            tree.insertSibling(new Node(tokenused));
-            tokenused = nextToken();
-        }
-        else {
-            Errorstatement("Brace", tokenused);
-        }
-
-        // Expecting '}'
-        if (tokenused.getType() == "}" && keywordcheck(tokenused.getName() == RBrace)) {
+        if (match("L_BRACE")) {
             tree.insertChild(new Node(tokenused));
+            counter+=1;
+            location.push_back(tokenused.getLine());
             tokenused = nextToken();
         }
-            // Missing '}'
-        else {
-            Errorstatement("Brace", tokenused);
+        if(match("R_BRACE"))
+        {
+            tree.insertChild(new Node(tokenused));
+            counter-=1;
+            if(counter<0)
+            {
+                Errorstatement("invalid R_BRACE",tokenused);
+            }
+            else {
+                location.pop_back();
+                tokenused = nextToken();
+            }
         }
-        nextToken();
+
+
+
+
+
     }
 
 
@@ -379,11 +498,10 @@ void parseBracket() {
         // Init token
         Token tokenused = peek();
         
-        if (tokenused.getType() == ";" && keywordcheck(tokenused.getName() == Semicolon)) {
+        if (tokenused.getType() == ";" && keywordcheck(tokenused.getName() == ";")) {
             tree.insertChild(new Node(tokenused));
             tokenused = nextToken();
         }
-        nextToken();
     }
 
 
@@ -393,12 +511,6 @@ void parseBracket() {
         exit(-1);
     }
 
-
-    // Helper functions to identify different statements or expressions
-    bool isBooleanExpression() {
-        // Logic to check if it's a boolean expression
-        return match("TRUE") || match("FALSE") || match("IDENTIFIER");
-    }
 
     bool isDeclarationStatement() {
         // A declaration begins with a type (int, float, etc.)
