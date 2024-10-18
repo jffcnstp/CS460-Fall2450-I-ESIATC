@@ -403,20 +403,6 @@ public:
                 Errorstatement("If", tokenused);
             tokenused = nextToken();
 
-            if (tokenused.getType() == "L_BRACE" && keywordcheck(tokenused.getName()) == Identifier)
-                tree.insertSibling(new Node(tokenused));
-            else
-                Errorstatement("If", tokenused);
-            tokenused = nextToken();
-
-            //stuff inside the brace goes here
-            //see parseBrace?
-
-            if (tokenused.getType() == "R_BRACE" && keywordcheck(tokenused.getName()) == Identifier)
-                tree.insertSibling(new Node(tokenused));
-            else
-                Errorstatement("If", tokenused);
-            tokenused = nextToken();
         }
         else if (tokenused.getType() == "While" && keywordcheck(tokenused.getName()) == Conditional) {
             tree.insertSibling(new Node(tokenused));
@@ -435,21 +421,6 @@ public:
             else
                 Errorstatement("While", tokenused);
             tokenused = nextToken();
-
-            if (tokenused.getType() == "L_BRACE" && keywordcheck(tokenused.getName()) == Identifier)
-                tree.insertSibling(new Node(tokenused));
-            else
-                Errorstatement("While", tokenused);
-            tokenused = nextToken();
-
-            //stuff inside the brace goes here
-            //see parseBrace?
-
-            if (tokenused.getType() == "R_BRACE" && keywordcheck(tokenused.getName()) == Identifier)
-                tree.insertSibling(new Node(tokenused));
-            else
-                Errorstatement("While", tokenused);
-            tokenused = nextToken();
         }
 
 
@@ -464,16 +435,15 @@ public:
             Errorstatement("Else", tokenused);
         tokenused = nextToken();
 
-        if (tokenused.getType() == "L_BRACE" && keywordcheck(tokenused.getName()) == Identifier)
+        if (tokenused.getType() == "L_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
             tree.insertSibling(new Node(tokenused));
         else
             Errorstatement("Else", tokenused);
         tokenused = nextToken();
 
-        //stuff inside the brace goes here
-        //see parseBrace?
+        //parseBoolean()
 
-        if (tokenused.getType() == "R_BRACE" && keywordcheck(tokenused.getName()) == Identifier)
+        if (tokenused.getType() == "R_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
             tree.insertSibling(new Node(tokenused));
         else
             Errorstatement("Else", tokenused);
