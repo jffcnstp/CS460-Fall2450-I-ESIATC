@@ -350,7 +350,7 @@ public:
             tokenused = nextToken();
 
             //invalid: last char of string is "\"
-            if (tokenused.getName().back() == '\\' || tokenused.getType() != "STRING" || keywordcheck(tokenused.getName()) != Identifier)
+            if (tokenused.getName().back() == '\\' || tokenused.getType() != "STRING")
                 Errorstatement("String", tokenused);
             else
                 tree.insertSibling(new Node(tokenused));
@@ -367,7 +367,7 @@ public:
             tokenused = nextToken();
 
             //invalid: last char of string is "\"
-            if (tokenused.getName().back() == '\\' || tokenused.getType() != "STRING" || keywordcheck(tokenused.getName()) != Identifier)
+            if (tokenused.getName().back() == '\\' || tokenused.getType() != "STRING")
                 Errorstatement("String", tokenused);
             else
                 tree.insertSibling(new Node(tokenused));
@@ -422,7 +422,6 @@ public:
                 Errorstatement("While", tokenused);
             tokenused = nextToken();
         }
-
 
         nextToken();
     }
