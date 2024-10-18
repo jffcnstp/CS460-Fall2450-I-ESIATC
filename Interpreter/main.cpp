@@ -204,6 +204,7 @@ class Parser {
         nextToken();
     }
 
+
     //this function is called when the token is a string (quote -> string -> quote)
     void parseString() {
         //i assume that at this point, the current token is known to be a DblQuote or SglQuote
@@ -245,216 +246,138 @@ class Parser {
         nextToken();
     }
     
+=======
+    /* PA3: RDP individual functions */
+// PA3:RDP - Parenthesis function
+// Individual function soley designed for handling parenthesis
+    void parseParenthesis() {
+        // init token
+        Token tokenused = peek();
+
+        // Expecting a '('
+        if (tokenused.getType() == "(" && keywordcheck(tokenused.getName()) ==LParen) {
+            tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+        }
+        else {
+            Errorstatement("Parenthesis", tokenused);
+        }
+
+        // Everything in the middle of the parenthesis
+        // TODO: Add an and statement that checks the keyword
+        if (tokenused.getType() != "(" || tokenused.getName() != ")") {
+            tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+        }
+        else {
+            Errorstatement("Parenthesis", tokenused);
+        }
+
+        // Expecting ')'
+        if (tokenused.getType() == ")" && keywordcheck(tokenused.getName()) ==RParen) {
+            tree.insertChild(new Node(tokenused));
+            tokenused = nextToken();
+        }
+        else {
+            Errorstatement("Parenthesis",tokenused);
+        }
+
+        nextToken();
+    }
+
+
+    // PA3: RDP - Bracket function
+    // Individual function soley designed for handling brackets
+void parseBracket() {
+        // Add some kind of node
+        Token tokenused = peek();
+
+        // Expecting a '['
+        if (tokenused.getType() == "[" && keywordcheck(tokenused.getName()) == LBracket) {
+            tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+        }
+        else {
+            Errorstatement("Bracket", tokenused);
+        }
+
+        // Everything else
+        // TODO: Add an and statement that checks the keyword
+        if (tokenused.getType() != "[" || tokenused.getType() != "]") {
+            tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+        }
+        else {
+            Errorstatement("Bracket",tokenused);
+        }
+
+        // Expecting ']'
+        if (tokenused.getType() == "]" && keywordcheck(tokenused.getName()) == RBracket) {
+            tree.insertChild(new Node(tokenused));
+            tokenused = nextToken();
+        }
+            // Missing ']'
+        else {
+            Errorstatement("Bracket", tokenused);
+        }
+    }
+
+        // PA3: RDP - Brace function
+    // Individual function soley designed for handling braces
+    void parseBrace() {
+        // Add some kind of node
+        Token tokenused = peek();
+
+        // Expecting a '{'
+        if (tokenused.getType() == "{" && keywordcheck(tokenused.getName()) == LBrace) {
+            tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+        }
+        else {
+            Errorstatement("Brace", tokenused);
+        }
+
+        // Everything else
+        // TODO: add an and statement that checks the keyword
+        if(tokenused.getType() != "{" || tokenused.getType() != "}") {
+            tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+        }
+        else {
+            Errorstatement("Brace", tokenused);
+        }
+
+        // Expecting '}'
+        if (tokenused.getType() == "}" && keywordcheck(tokenused.getName() == RBrace)) {
+            tree.insertChild(new Node(tokenused));
+            tokenused = nextToken();
+        }
+            // Missing '}'
+        else {
+            Errorstatement("Brace", tokenused);
+        }
+    }
+
+
+    // PA3: RDP - Semicolon function
+    // Individual function soley designed for handling semicolons
+    void parseSemicolon() {
+        // Init token
+        Token tokenused = peek();
+        
+        if (tokenused.getType() == ";" && keywordcheck(tokenused.getName() == Semicolon)) {
+            tree.insertChild(new Node(tokenused));
+            tokenused = nextToken();
+        }
+    }
+
+
     void Errorstatement(string fromwhere,Token tokenused)
     {
         cout << fromwhere <<" error on line: " << tokenused.getLine() << " Token name: "<<tokenused.getName() <<"Token type: "<<tokenused.getType() << endl;
         exit(-1);
     }
-    // <NUMERICAL_EXPRESSION> ::= <NUMERICAL_OPERAND> | <L_PAREN> <NUMERICAL_OPERAND> <R_PAREN> ...
-//    Node* parseNumericalExpression() {
-//        Node* node = addNode("NumericalExpression");
-//
-//        if (match("L_PAREN")) {
-//            addNode("(");
-//            parseNumericalExpression();
-//            match("R_PAREN");
-//            addNode(")");
-//        } else {
-//            parseNumericalOperand();
-//        }
-//
-//        if (match("PLUS") || match("MINUS") || match("ASTERISK") || match("DIVIDE") || match("MODULO") || match("CARET")) {
-//            addNode("Operator");
-//            parseNumericalExpression();
-//        }
-//
-//        return node;
-//    }
-//
-//    // <NUMERICAL_OPERAND> ::= <IDENTIFIER> | <INTEGER> | <GETCHAR_FUNCTION> | <USER_DEFINED_FUNCTION>
-//    Node* parseNumericalOperand() {
-//        Node* node = addNode("NumericalOperand");
-//        if (match("IDENTIFIER")) {
-//            addNode("Identifier");
-//        } else if (match("INTEGER")) {
-//            addNode("Integer");
-//        } else {
-//            // Add support for other operand types like getchar function or user-defined functions.
-//            // We'll need separate methods for these, which we can invoke here.
-//        }
-//        return node;
-//    }
-//
-//    // <BOOLEAN_EXPRESSION> ::= <BOOLEAN_TRUE> | <BOOLEAN_FALSE> | <IDENTIFIER> ...
-//    Node* parseBooleanExpression() {
-//        Node* node = addNode("BooleanExpression");
-//
-//        if (match("TRUE")) {
-//            addNode("true");
-//        } else if (match("FALSE")) {
-//            addNode("false");
-//        } else if (match("IDENTIFIER")) {
-//            addNode("Identifier");
-//        } else {
-//            // Parse numerical expressions in boolean comparisons
-//            parseNumericalExpression();
-//            if (match("BOOLEAN_EQUAL") || match("BOOLEAN_NOT_EQUAL") || match("LT") || match("GT") || match("LT_EQUAL") || match("GT_EQUAL")) {
-//                addNode("RelationalOperator");
-//                parseNumericalExpression();
-//            }
-//        }
-//
-//        if (match("BOOLEAN_AND") || match("BOOLEAN_OR")) {
-//            addNode("BooleanOperator");
-//            parseBooleanExpression();
-//        }
-//
-//        return node;
-//    }
-//
-//    // <EXPRESSION> ::= <BOOLEAN_EXPRESSION> | <NUMERICAL_EXPRESSION>
-//    Node* parseExpression() {
-//        Node* node = addNode("Expression");
-//        if (isBooleanExpression()) {
-//            parseBooleanExpression();
-//        } else {
-//            parseNumericalExpression();
-//        }
-//        return node;
-//    }
-//
-//    // <SELECTION_STATEMENT> ::= if <L_PAREN> <BOOLEAN_EXPRESSION> <R_PAREN> <STATEMENT> ...
-//    Node* parseSelectionStatement() {
-//        Node* node = addNode("SelectionStatement");
-//        match("IF");
-//        addNode("if");
-//        match("L_PAREN");
-//        parseBooleanExpression();
-//        match("R_PAREN");
-//        parseStatement();
-//
-//        if (match("ELSE")) {
-//            addNode("else");
-//            parseStatement();
-//        }
-//        return node;
-//    }
-//
-//    // <ITERATION_STATEMENT> ::= for <L_PAREN> <INITIALIZATION_EXPRESSION> <SEMICOLON> ...
-//    Node* parseIterationStatement() {
-//        Node* node = addNode("IterationStatement");
-//        match("FOR");
-//        addNode("for");
-//        match("L_PAREN");
-//        parseInitializationExpression();
-//        match("SEMICOLON");
-//        parseBooleanExpression();
-//        match("SEMICOLON");
-//        parseExpression();
-//        match("R_PAREN");
-//        parseStatement();
-//        return node;
-//    }
-//
-//    // <INITIALIZATION_EXPRESSION> ::= <IDENTIFIER> <ASSIGNMENT_OPERATOR> <EXPRESSION> ...
-//    Node* parseInitializationExpression() {
-//        Node* node = addNode("InitializationExpression");
-//        match("IDENTIFIER");
-//        addNode("Identifier");
-//        match("ASSIGNMENT_OPERATOR");
-//        addNode("=");
-//        parseExpression();
-//        return node;
-//    }
-//
-//    Node* parseDeclarationStatement() {
-//        Node* node = addNode("DeclarationStatement");
-//
-//        // Match and add the type (e.g., int, float)
-//        if (match("int")) {
-//            addNode("int");
-//        } else if (match("float")) {
-//            addNode("float");
-//        } else if (match("bool")) {
-//            addNode("bool");
-//        } else if (match("char")) {
-//            addNode("char");
-//        } else if (match("string")) {
-//            addNode("string");
-//        }
-//
-//        // Match and add the identifier (variable name)
-//        if (match("IDENTIFIER")) {
-//            addNode("Identifier");
-//        } else {
-//            std::cerr << "Syntax error: Expected an identifier after type." << std::endl;
-//            exit(1);
-//        }
-//
-//        // Check if there's an assignment operator (=) for initialization
-//        if (match("ASSIGNMENT_OPERATOR")) {
-//            addNode("=");
-//
-//            // Parse the expression on the right-hand side of the assignment
-//            parseExpression();
-//        }
-//
-//        // Match the semicolon at the end of the statement
-//        if (!match("SEMICOLON")) {
-//            std::cerr << "Syntax error: Expected ';' at the end of the declaration statement." << std::endl;
-//            exit(1);
-//        }
-//
-//        return node;
-//    }
-//
-//    Node* parseAssignmentStatement() {
-//        Node* node = addNode("AssignmentStatement");
-//
-//        // Match and add the identifier (variable name)
-//        if (match("IDENTIFIER")) {
-//            addNode("Identifier");
-//        } else {
-//            std::cerr << "Syntax error: Expected an identifier in assignment statement." << std::endl;
-//            exit(1);
-//        }
-//
-//        // Match and add the assignment operator (=)
-//        if (match("ASSIGNMENT_OPERATOR")) {
-//            addNode("=");
-//        } else {
-//            std::cerr << "Syntax error: Expected '=' in assignment statement." << std::endl;
-//            exit(1);
-//        }
-//
-//        // Parse the expression on the right-hand side of the assignment
-//        parseExpression();
-//
-//        // Match the semicolon at the end of the statement
-//        if (!match("SEMICOLON")) {
-//            std::cerr << "Syntax error: Expected ';' at the end of the assignment statement." << std::endl;
-//            exit(1);
-//        }
-//
-//        return node;
-//    }
-//
-//
-//
-//    // <STATEMENT> ::= <DECLARATION_STATEMENT> | <ASSIGNMENT_STATEMENT> ...
-//    Node* parseStatement() {
-//        Node* node = addNode("Statement");
-//        if (isDeclarationStatement()) {
-//            parseDeclarationStatement();
-//        } else if (isAssignmentStatement()) {
-//            parseAssignmentStatement();
-//        } else if (isIterationStatement()) {
-//            parseIterationStatement();
-//        } else if (isSelectionStatement()) {
-//            parseSelectionStatement();
-//        }
-//        return node;
-//    }
+
 
     // Helper functions to identify different statements or expressions
     bool isBooleanExpression() {
@@ -491,16 +414,6 @@ class Parser {
         // An iteration statement starts with 'for' or 'while'
         return match("FOR") || match("WHILE");
     }
-
-
-    // Entry point to parse the program
-//    Node* parseProgram() {
-//        Node* root = addNode("Program");
-//        while (!isEnd()) {
-//            parseStatement();
-//        }
-//        return root;
-//    }
 
     bool isEnd() {
         return current >= tokens.size();
