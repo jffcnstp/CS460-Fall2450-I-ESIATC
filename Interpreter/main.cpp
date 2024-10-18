@@ -203,6 +203,50 @@ class Parser {
 
         nextToken();
     }
+
+
+    //this function is called when the token is a string (quote -> string -> quote)
+    void parseString() {
+        //i assume that at this point, the current token is known to be a DblQuote or SglQuote
+        Token tokenused = peek();
+        if (tokenused.getType()=="DOUBLE_QUOTE" && keywordcheck(tokenused.getName()) == Identifier) {
+            tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+
+            //invalid: last char of string is "\"
+            if (tokenused.getName().back() == '\\' || tokenused.getType() != "STRING" || keywordcheck(tokenused.getName()) != Identifier)
+                Errorstatement("String", tokenused);
+            else
+                tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+
+            if (tokenused.getType() == "DOUBLE_QUOTE" && keywordcheck(tokenused.getName()) == Identifier)
+                tree.insertSibling(new Node(tokenused));
+            else
+                Errorstatement("String", tokenused);
+            tokenused = nextToken();
+        }
+        else if (tokenused.getType()=="SINGLE_QUOTE" && keywordcheck(tokenused.getName()) == Identifier) {
+            tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+
+            //invalid: last char of string is "\"
+            if (tokenused.getName().back() == '\\' || tokenused.getType() != "STRING" || keywordcheck(tokenused.getName()) != Identifier)
+                Errorstatement("String", tokenused);
+            else
+                tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+
+            if (tokenused.getType() == "SINGLE_QUOTE" && keywordcheck(tokenused.getName()) == Identifier)
+                tree.insertSibling(new Node(tokenused));
+            else
+                Errorstatement("String", tokenused);
+            tokenused = nextToken();
+        }
+        nextToken();
+    }
+    
+=======
     /* PA3: RDP individual functions */
 // PA3:RDP - Parenthesis function
 // Individual function soley designed for handling parenthesis
@@ -211,7 +255,8 @@ class Parser {
         Token tokenused = peek();
 
         // Expecting a '('
-        if (tokenused.getType() == "(" && match("L_PAREN")) {
+        if (match("L_PAREN")) {
+
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -220,8 +265,9 @@ class Parser {
         }
 
         // Everything in the middle of the parenthesis
-        if ((tokenused.getType() != "(" || tokenused.getName() != ")") &&
-        (!match("L_PAREN") || !match("R_PAREN"))) {
+
+        if (!match("L_PAREN") || !match("R_PAREN")) {
+
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -230,7 +276,7 @@ class Parser {
         }
 
         // Expecting ')'
-        if (tokenused.getType() == ")" && match("R_PAREN")) {
+        if (match("R_PAREN")) {
             tree.insertChild(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -249,7 +295,8 @@ void parseBracket() {
         Token tokenused = peek();
 
         // Expecting a '['
-        if (tokenused.getType() == "[" && match("L_BRACKET")) {
+
+        if (match("L_BRACKET")) {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -257,9 +304,29 @@ void parseBracket() {
             Errorstatement("Bracket", tokenused);
         }
 
+        //TODO: Account for both negative integer error and numerical calculation
+        // if current token is an integer
+
+        // Negative Integer error
+        if(match("MINUS")) {
+            Errorstatement("Bracket",tokenused);
+        }
+//        //TODO: Uncomment this when parseNumerical() is implemented
+//        // Also make sure that we aren't going over tokens by removing "tokenused = nextToken();"
+//        // Numerical Expression case
+//        if(match("INTEGER")) {
+//            parseNumerical();
+//            tokenused = nextToken();
+//        }
+//        else {
+//            Errorstatement("Bracket",tokenused);
+//        }
+
+
+
         // Everything else
-        if ((tokenused.getType() != "[" || tokenused.getType() != "]") &&
-        (!match("L_BRACKET") || !match("R_BRACKET"))) {
+
+        if (!match("L_BRACKET") || !match("R_BRACKET")) {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -268,7 +335,8 @@ void parseBracket() {
         }
 
         // Expecting ']'
-        if (tokenused.getType() == "]" && match("R_BRACKET")) {
+
+        if (match("R_BRACKET")) {
             tree.insertChild(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -286,7 +354,7 @@ void parseBracket() {
         Token tokenused = peek();
 
         // Expecting a '{'
-        if (tokenused.getType() == "{" && match("L_BRACE")) {
+        if (match("L_BRACE")) {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -295,8 +363,7 @@ void parseBracket() {
         }
 
         // Everything else
-        if(tokenused.getType() != "{" || tokenused.getType() != "}" &&
-        (!match("L_BRACE") || !match("R_BRACE"))) {
+        if(!match("L_BRACE") || !match("R_BRACE")) {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -305,7 +372,7 @@ void parseBracket() {
         }
 
         // Expecting '}'
-        if (tokenused.getType() == "}" && match("R_BRACE")) {
+        if (match("R_BRACE")) {
             tree.insertChild(new Node(tokenused));
             tokenused = nextToken();
         }
