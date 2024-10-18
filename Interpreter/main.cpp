@@ -211,7 +211,7 @@ class Parser {
         Token tokenused = peek();
 
         // Expecting a '('
-        if (tokenused.getType() == "(" && keywordcheck(tokenused.getName()) ==LParen) {
+        if (tokenused.getType() == "(" && match("L_PAREN")) {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -220,8 +220,8 @@ class Parser {
         }
 
         // Everything in the middle of the parenthesis
-        // TODO: Add an and statement that checks the keyword
-        if (tokenused.getType() != "(" || tokenused.getName() != ")") {
+        if ((tokenused.getType() != "(" || tokenused.getName() != ")") &&
+        (!match("L_PAREN") || !match("R_PAREN"))) {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -230,7 +230,7 @@ class Parser {
         }
 
         // Expecting ')'
-        if (tokenused.getType() == ")" && keywordcheck(tokenused.getName()) ==RParen) {
+        if (tokenused.getType() == ")" && match("R_PAREN")) {
             tree.insertChild(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -249,7 +249,7 @@ void parseBracket() {
         Token tokenused = peek();
 
         // Expecting a '['
-        if (tokenused.getType() == "[" && keywordcheck(tokenused.getName()) == LBracket) {
+        if (tokenused.getType() == "[" && match("L_BRACKET")) {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -259,7 +259,8 @@ void parseBracket() {
 
         // Everything else
         // TODO: Add an and statement that checks the keyword
-        if (tokenused.getType() != "[" || tokenused.getType() != "]") {
+        if ((tokenused.getType() != "[" || tokenused.getType() != "]") &&
+        (!match("L_BRACKET") || !match("R_BRACKET"))) {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -268,7 +269,7 @@ void parseBracket() {
         }
 
         // Expecting ']'
-        if (tokenused.getType() == "]" && keywordcheck(tokenused.getName()) == RBracket) {
+        if (tokenused.getType() == "]" && match("R_BRACKET")) {
             tree.insertChild(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -279,13 +280,13 @@ void parseBracket() {
     }
 
         // PA3: RDP - Brace function
-    // Individual function soley designed for handling braces
+    // Individual function soley designed for handling braces and things in-between
     void parseBrace() {
         // Add some kind of node
         Token tokenused = peek();
 
         // Expecting a '{'
-        if (tokenused.getType() == "{" && keywordcheck(tokenused.getName()) == LBrace) {
+        if (tokenused.getType() == "{" && match("L_BRACE")) {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -294,8 +295,8 @@ void parseBracket() {
         }
 
         // Everything else
-        // TODO: add an and statement that checks the keyword
-        if(tokenused.getType() != "{" || tokenused.getType() != "}") {
+        if(tokenused.getType() != "{" || tokenused.getType() != "}" &&
+        (!match("L_BRACE") || !match("R_BRACE"))) {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -304,7 +305,7 @@ void parseBracket() {
         }
 
         // Expecting '}'
-        if (tokenused.getType() == "}" && keywordcheck(tokenused.getName() == RBrace)) {
+        if (tokenused.getType() == "}" && match("R_BRACE")) {
             tree.insertChild(new Node(tokenused));
             tokenused = nextToken();
         }
@@ -320,10 +321,13 @@ void parseBracket() {
     void parseSemicolon() {
         // Init token
         Token tokenused = peek();
-        
-        if (tokenused.getType() == ";" && keywordcheck(tokenused.getName() == Semicolon)) {
+
+        if (tokenused.getType() == ";" && match("SEMICOLON")) {
             tree.insertChild(new Node(tokenused));
             tokenused = nextToken();
+        }
+        else {
+            Errorstatement("Semicolon", tokenused);
         }
     }
 
