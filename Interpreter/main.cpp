@@ -212,10 +212,11 @@ class Parser {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
 
-            if (tokenused.getType() == "STRING" && keywordcheck(tokenused.getName()) == Identifier)
-                tree.insertSibling(new Node(tokenused));
-            else
+            //invalid: last char of string is "\"
+            if (tokenused.getName().back() == '\\' || tokenused.getType() != "STRING" || keywordcheck(tokenused.getName()) != Identifier)
                 Errorstatement("String", tokenused);
+            else
+                tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
 
             if (tokenused.getType() == "DOUBLE_QUOTE" && keywordcheck(tokenused.getName()) == Identifier)
@@ -228,10 +229,11 @@ class Parser {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
 
-            if (tokenused.getType() == "STRING" && keywordcheck(tokenused.getName()) == Identifier)
-                tree.insertSibling(new Node(tokenused));
-            else
+            //invalid: last char of string is "\"
+            if (tokenused.getName().back() == '\\' || tokenused.getType() != "STRING" || keywordcheck(tokenused.getName()) != Identifier)
                 Errorstatement("String", tokenused);
+            else
+                tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
 
             if (tokenused.getType() == "SINGLE_QUOTE" && keywordcheck(tokenused.getName()) == Identifier)
