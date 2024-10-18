@@ -465,6 +465,38 @@ void parseBracket() {
             nextToken();
     }
 
+// PA3: RDP - parseNumerical()
+// Handles numerical expressions
+void parseNumerical() {
+        // init token
+        Token tokenused = peek();
+        
+        // Negative check
+        if (match("MINUS")) {
+            tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+        }
+
+        // Checks to see if it's a number, add to tree
+        if (match("INTEGER")) {
+            tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+        }
+
+        // Checks to see if there are expressions, this should cover all ops: + - / * %
+        if (match("PLUS") || match("MINUS") || match("DIVIDE") 
+        || match("AESTERISK") || match("MODULO")) {
+            tree.insertSibling((new Node(tokenused)));
+            tokenused = nextToken();
+        }
+
+        // invalid syntax
+        else {
+            Errorstatement("Numerical", tokenused);
+        }
+        nextToken();
+    }
+
 
 
     void Errorstatement(string fromwhere,Token tokenused)
