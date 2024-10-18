@@ -415,6 +415,112 @@ class Parser {
 //        return node;
 //    }
 
+/* PA3: RDP individual functions */
+// These are a few individual functions, they're commented out because they don't work quite yet.
+// Just need to make sure these are mostly fine... a bit lost for the middle parts of these functions.
+// PA3:RDP - Parenthesis function MAY NOT BE NECESSARY THIS IS JUST PSEUDOCODE
+// Individual function soley designed for handling parenthesis
+//Node* parseParenthesis() {
+//        // Add some kind of node
+//        Node* node = addNode("LParen");
+//
+//        // Expecting a '('
+//        if (match("L_PAREN")) {
+//            addNode("("); // add to node
+//        }
+//
+//        // Everything else
+//        if(!match("L_PAREN") || !match("R_PAREN")) {
+//            // Add the stuff in the middle....
+//            // Need help with this one
+//        }
+//
+//        // Expecting ')'
+//        if (match("R_PAREN")) {
+//            addNode(")");
+//        }
+//
+//        // Missing ')'
+//        else {
+//            std::cerr << "Syntax error: Expected a ')'" << std::endl;
+//        }
+//
+//        // Return node
+//        return node;
+//    }
+//
+//    // PA3: RDP - Bracket function
+//    // Individual function soley designed for handling brackets
+//    Node* parseBracket() {
+//        // Add some kind of node
+//        Node* node = addNode("LBracket");
+//
+//        // Expecting a '['
+//        if (match("L_BRACKET")) {
+//            addNode("["); // add to node
+//        }
+//
+//        // Everything else
+//        if(!match("L_BRACKET") || !match("R_BRACKET")) {
+//            // Add the stuff in the middle....
+//            // Need help with this one
+//        }
+//
+//        // Expecting ']'
+//        if (match("R_BRACKET")) {
+//            addNode("]");
+//        }
+//
+//            // Missing ']'
+//        else {
+//            std::cerr << "Syntax error: Expected a ']'" << std::endl;
+//        }
+//
+//        // Return node
+//        return node;
+//    }
+//
+//    // PA3: RDP - Brace function
+//    // Individual function soley designed for handling braces
+//    Node* parseSquareBrace() {
+//        // Add some kind of node
+//        Node* node = addNode("LBrace");
+//
+//        // Expecting a '['
+//        if (match("L_BRACE")) {
+//            addNode("{"); // add to node
+//        }
+//
+//        // Everything else
+//        if(!match("L_BRACE") || !match("R_BRACE")) {
+//            // Add the stuff in the middle....
+//            // Need help with this one
+//        }
+//
+//        // Expecting '}'
+//        if (match("R_BRACE")) {
+//            addNode("}");
+//        }
+//
+//            // Missing '}'
+//        else {
+//            std::cerr << "Syntax error: Expected a '}'" << std::endl;
+//        }
+//
+//        // Return node
+//        return node;
+//    }
+//
+//    // PA3: RDP - Semicolon function
+//    // Individual function soley designed for handling semicolons
+//    Node* parseSemicolon() {
+//        // Add some kind of node
+//        Node* node = addNode("Semicolon");
+//
+//        return node;
+//    }
+
+
     // Helper functions to identify different statements or expressions
     bool isBooleanExpression() {
         // Logic to check if it's a boolean expression
