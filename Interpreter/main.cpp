@@ -396,11 +396,18 @@ void parseBracket() {
             Errorstatement("Bracket", tokenused);
         }
 
-
         // Negative Integer error
         if(match("MINUS")) {
             Errorstatement("Bracket",tokenused);
         }
+
+        // Expecting ']'
+
+        if (match("R_BRACKET")) {
+            tree.insertChild(new Node(tokenused));
+            tokenused = nextToken();
+        }
+
 //        //TODO: Uncomment this when parseNumerical() is implemented
 //        // Also make sure that we aren't going over tokens by removing "tokenused = nextToken();"
 //        // Numerical Expression case
@@ -412,12 +419,6 @@ void parseBracket() {
 //            Errorstatement("Bracket",tokenused);
 //        }
 
-        // Expecting ']'
-
-        if (match("R_BRACKET")) {
-            tree.insertChild(new Node(tokenused));
-            tokenused = nextToken();
-        }
             // Missing ']'
         else {
             Errorstatement("Bracket", tokenused);
@@ -446,12 +447,12 @@ void parseBracket() {
             braceLocation.pop_back(); // Push to vector
             tree.insertChild(new Node(tokenused));
             tokenused = nextToken();
-        }// Missing '}'
+        }
+       // Missing '}'
         else {
             Errorstatement("Brace", tokenused);
         }
-        
-        // Checks to see if braces are being used properly
+
         nextToken();
     }
 
@@ -463,6 +464,8 @@ void parseBracket() {
             tree.insertChild(new Node(peek()));
             nextToken();
     }
+
+
 
     void Errorstatement(string fromwhere,Token tokenused)
     {
