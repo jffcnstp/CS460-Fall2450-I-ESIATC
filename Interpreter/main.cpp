@@ -568,6 +568,8 @@ public:
     }
 
     void parseForStatement() {
+
+        //first statement is assumed to be the form variable = integer
         Token tokenused = peek();
         if (tokenused.getType() == "FOR" && keywordcheck(tokenused.getName()) == Conditional)
             tree.insertChild(new Node(tokenused));
@@ -601,10 +603,12 @@ public:
 
         parseSemicolon();
 
+        //second statement handled entirely by parseExpression
         parseExpression();
 
         parseSemicolon();
 
+        //third statement has the form variable = (expression)
         //this line is here because parseSemicolon and parseExpression do not update tokenused
         tokenused = peek();
         if (tokenused.getType() == "IDENTIFIER" && keywordcheck(tokenused.getName()) == Identifier)
