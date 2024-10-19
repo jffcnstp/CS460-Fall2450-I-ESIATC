@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <algorithm>
 #include "CommentRemove.h"
 #include "Token.h"
 
@@ -10,9 +11,10 @@ using namespace std;
 
 std::string typekeyword[]={"int","bool","char","void"};
 std::string conditionalkeyword[]={"if","for","while","else"};
+vector<string> operandlist={"PLUS","MINUS","ASTERISK","DIVIDE","MODULO","LT_EQUAL","LT","GT_EQUAL","GT","BOOLEAN_AND","BOOLEAN_OR","BOOLEAN_NOT_EQUAL"};
+//will need an array of reserved functions in the future
 
-
-enum keywords{Identifier=0,Type=1,Conditional=2,RETURN=3};
+enum keywords{Identifier=0,Type=1,Conditional=2,RETURN=3,Function=4};
 // Node of the LCRS Tree
 struct Node {
     Token data;
@@ -128,13 +130,6 @@ public:
         return false;
     }
 
-    // Helper method to add nodes to the tree
-    Node* addNode(Token data) {
-        Node* node = new Node(data);
-        tree.insertChild(node);
-        return node;
-    }
-
 
     //PURPOSE: checks the parameter string  for what type of identifier it is and returns an int
     //INPUT:  string name (ideally the string passed is from Token.name
@@ -155,6 +150,10 @@ public:
         {
             return RETURN;
         }
+        if(name == "printf")//will need to change this to a for loop array check in the future
+        {
+            return Function;
+        }
         return Identifier;
     }
 
@@ -171,41 +170,42 @@ public:
         {
             if(match("FUNCTION"))
                 parseFunctionDeclaration();
-            if(match("IDENTIFIER"))
+
+            else if(match("IDENTIFIER"))
             {
                 int keyword=keywordcheck(peek().getName());
                 switch(keyword)
                 {
                     case(Type):
                     {
-                        parseVariableDeclaration(false);
+                        parseVariableDeclaration();
                     }
                     case(Identifier):
                     {
-                       // parseVariableOperation();
+                       parseVariableOperation();
                     }
                     case(RETURN):
                     {
-                       // parseReturn();
+                        parseReturn();
                     }
                 }
             }
-            if(match("PROCEDURE"))
+           else if(match("PROCEDURE"))
             {
                 parseProcedure();
             }
-            if(match("IF")||match("WHILE"))
+           else if(match("IF")||match("WHILE"))
             {
-                //parseiforwhile statement
+                parseIfWhileStatement();
             }
-            if(match("ELSE"))
+           else if(match("ELSE"))
             {
-                //parse else
+                parseElseStatement();
             }
-            if(match("FOR"))
-            {
-
-            }
+//           else if(match("FOR"))
+//            {
+//              parseForStatement();
+//            }
 
             //procedure declaration
             if(match("SEMICOLON"))
@@ -232,7 +232,7 @@ public:
         tree.insertChild(new Node(peek()));
         Token tokenused=nextToken();
 
-        if(match("IDENTIFIER"))
+        if(match("IDENTIFIER") && keywordcheck(peek().getName())==Identifier)
         {
             tree.insertSibling(new Node(tokenused));
             tokenused=nextToken();
@@ -248,7 +248,7 @@ public:
         else
             Errorstatement("Procedure",tokenused);
 
-        if(match("IDENTIFIER"))
+        if(match("IDENTIFIER"))//EDIT EMERGENCY
         {
             //THIS ONLY WORKS IF THE PROCEDURE IS MAIN.  IF HE MAKES A PROCEDURE THAT HAS DATA TYPES OR IS A FUNCTION DECLARATION CHANGE THIS
             tree.insertSibling(new Node(tokenused));
@@ -330,11 +330,11 @@ public:
         else
             Errorstatement("FunctionDeclarationParameter",tokenused);
 
-        if (match("IDENTIFIER") && keywordcheck(tokenused.getName()) == Identifier) {
+        if (match("IDENTIFIER") && keywordcheck(tokenused.getName()) == Identifier) {//EDIT EMERGENCY might need to parse brackets
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         } else
-            Errorstatement("VariableDeclaration", tokenused);
+            Errorstatement("FunctionDeclarationParameter", tokenused);
 
         if (match("L_BRACKET")) {
             parseBracket();
@@ -376,6 +376,101 @@ public:
             }
         }
 
+    }
+    //PURPOSE: parses variable operations like sum = x+3
+    //Input: token starts on an identifier that is not in a keyword category
+    //Output: a full code line stopped by a Semicolon should be pushed to output
+    //Might need to account for a bracket call after every identifier
+    void parseVariableOperation()
+    {
+        tree.insertChild(new Node(peek()));
+        nextToken();
+
+        if(match("ASSIGNMENT_OPERATOR"))
+        {
+            tree.insertSibling(new Node(peek()));
+            nextToken();
+            if(match("DOUBLE_QUOTE")||match("SINGLE_QUOTE"))
+                parseString();
+            else
+                parseExpression();//or boolean
+        }
+        //the identifier was a function instead of a variable
+        else if(match("L_PAREN"))
+        {
+            tree.insertSibling(new Node(peek()));
+            nextToken();
+
+            parseFunctionCallParameters();
+
+            if(match("R_PAREN"))
+            {
+                tree.insertSibling(new Node(peek()));
+                nextToken();
+            }
+            else
+                Errorstatement("VariableOperation",peek());
+
+        }
+        if(!match("SEMICOLON"))
+            Errorstatement("VariableOperation",peek());
+
+    }
+    void parseFunctionCallParameters()
+    {
+        bool loop=true;
+        while(loop)
+        {
+            loop = false;
+            if(match("DOUBLE_QUOTE")||match("SINGLE_QUOTE"))
+                parseString();
+            else
+            {
+                tree.insertSibling(new Node(peek()));
+                nextToken();
+            }
+            if(match("COMMA"))
+            {
+                loop = true;
+                tree.insertSibling(new Node(peek()));
+                nextToken();
+            }
+
+        }
+        if(!match("R_PAREN"))
+            Errorstatement("FunctionCallParameter",peek());
+    }
+    //Purpose: parses and inserts the return statement into the tree without the semicolon
+    //Input: current token should be on a RETURN type
+    //OUTPUT:  return statement added to the CST
+    // might need to add the ability to parse array identifiers
+    void parseReturn()
+    {
+        tree.insertChild(new Node(peek()));
+        nextToken();
+
+        if(match("L_PAREN"))
+        {
+            tree.insertSibling(new Node(peek()));
+            nextToken();
+
+            parseExpression(); //or boolean
+
+            if(match("R_PAREN"))
+            {
+                tree.insertSibling(new Node(peek()));
+                nextToken();
+            }
+            else
+                Errorstatement("Return",peek());
+        }
+        else if(match("IDENTIFIER") && keywordcheck(peek().getName())==Identifier)//EDIT EMERGENCY might need to parse brackets
+        {
+            tree.insertSibling(new Node(peek()));
+            nextToken();
+        }
+        if(!match("SEMICOLON"))
+            Errorstatement("Return",peek());
     }
 
     //this function is called when the token is a string (quote -> string -> quote)
@@ -437,7 +532,7 @@ public:
             //parseBoolean();
 
             if (match("R_PAREN")  )
-                tree.insertChild(new Node(peek()));
+                tree.insertSibling(new Node(peek()));
             else
                 Errorstatement("If", peek());
             nextToken();
@@ -456,13 +551,12 @@ public:
             //parseBoolean();
 
             if (match("R_PAREN")  )
-                tree.insertChild(new Node(peek()));
+                tree.insertSibling(new Node(peek()));
             else
                 Errorstatement("While", peek());
             nextToken();
         }
 
-        nextToken();
     }
 
     void parseElseStatement() {
@@ -481,7 +575,7 @@ public:
         //parseBoolean()
 
         if (match("R_PAREN")  )
-            tree.insertChild(new Node(peek()));
+            tree.insertSibling(new Node(peek()));
         else
             Errorstatement("Else", peek());
         nextToken();
@@ -491,7 +585,8 @@ public:
 
     // PA3: RDP - Bracket function
     // Individual function soley designed for handling brackets
-void parseBracket() {
+    void parseBracket()
+    {
         // Add some kind of node
         Token tokenused = peek();
 
@@ -510,29 +605,18 @@ void parseBracket() {
             Errorstatement("Bracket",tokenused);
         }
 
+        parseExpression();
+
         // Expecting ']'
 
         if (match("R_BRACKET")) {
-            tree.insertChild(new Node(tokenused));
-            tokenused = nextToken();
+            tree.insertSibling(new Node(tokenused));
         }
-
-//        //TODO: Uncomment this when parseNumerical() is implemented
-//        // Also make sure that we aren't going over tokens by removing "tokenused = nextToken();"
-//        // Numerical Expression case
-//        if(match("INTEGER")) {
-//            parseNumerical();
-//            tokenused = nextToken();
-//        }
-//        else {
-//            Errorstatement("Bracket",tokenused);
-//        }
-
-            // Missing ']'
-        else {
+        else
+        {
             Errorstatement("Bracket", tokenused);
         }
-    nextToken();
+        nextToken();
     }
 
         // PA3: RDP - Brace function
@@ -553,16 +637,16 @@ void parseBracket() {
         // Expecting '}'
        else if (match("R_BRACE")) {
             braceCounter--; // decrement
+            if(braceCounter<0)
+            {
+                cout<<"Illegal R_BRACE without accompanying L_BRACE at line:"<<peek().getLine();
+                exit(-1);
+            }
             braceLocation.pop_back(); // Push to vector
             tree.insertChild(new Node(tokenused));
             tokenused = nextToken();
         }
-       // Missing '}'
-        else {
-            Errorstatement("Brace", tokenused);
-        }
 
-        nextToken();
     }
 
 
@@ -575,24 +659,74 @@ void parseBracket() {
     }
 
 
-// PA3: RDP - parseNumerical()
-// Handles numerical expressions, recursively gathers all tokens until an invalid token appears
-    void parseNumerical() {
-        // init token
-        Token tokenused = peek();
-        
-        // Base case: next token is not an integer or an operation
-        // NOTE: be cautious with the last check, it might not be right.
-        if (!match("INTEGER") && (!match("PLUS") || !match("MINUS") ||
-            !match("DIVIDE") || !match("AESTERISK") || !match("MODULO") ||
-            !match("CARET")) && (match("IDENTIFIER") && keywordcheck(tokenused.getName()) ==0)) {
-            return;
-        }
+// hopefully handles all expressions including strings function calls operators with boolean or arithmetical operands
+    void parseExpression() {
 
-        // Recursive call: 
-        tree.insertChild(new Node(tokenused));
-        nextToken(); // unsure if this might screw it up
-        parseNumerical();
+        bool loop=true;
+        while(loop) {
+            loop = false;
+            if (match("DOUBLE_QUOTE") || match("SINGLE_QUOTE")) //string
+                parseString();
+            else if ( (match("MINUS") && tokens[current + 1].getType() == "INTEGER") || match("INTEGER") ) //negative integer
+            {
+                if(match("MINUS")) {
+                    tree.insertSibling(new Node(peek()));
+                    nextToken();
+                }
+                tree.insertSibling(new Node(peek()));
+                nextToken();
+            }
+            else if ( ( match("BOOLEAN_NOT") && tokens[current + 1].getType() == "IDENTIFIER" && keywordcheck(tokens[current+1].getName()) == Identifier)
+            || ( match("IDENTIFIER") && keywordcheck(peek().getName())==Identifier) )  // not+identifier or just identifier
+            {
+                if (match("BOOLEAN_NOT")) //insert ! if there is one
+                {
+                    tree.insertSibling(new Node(peek()));
+                    nextToken();
+                }
+
+                tree.insertSibling(new Node(peek())); //insert identifier
+                nextToken();
+
+                if (match("L_PAREN")) { //insert function parameters if the identifier is a function
+                    tree.insertSibling(new Node(peek()));
+                    nextToken();
+                    parseFunctionCallParameters();
+
+                    if (match("R_PAREN")) {
+                        tree.insertSibling(new Node(peek()));
+                        nextToken();
+                    } else
+                        Errorstatement("ExpressionParse", peek());
+                }
+            }
+            else if (match("L_PAREN"))
+            {
+                tree.insertSibling(new Node(peek()));
+                nextToken();
+
+                parseExpression();
+
+                if (match("R_PAREN")) {
+                    tree.insertSibling(new Node(peek()));
+                    nextToken();
+                } else
+                    Errorstatement("ExpressionParseR_PAREN", peek());
+
+            }
+            else
+                Errorstatement("ExpressionParseOperator", peek());
+
+
+            if(find(operandlist.begin(),operandlist.end(),peek().getType())== operandlist.end()) //if the token is in operandlist
+            {
+                loop = true;
+                tree.insertSibling(new Node(peek()));
+                nextToken();
+            }
+            else
+                Errorstatement("ExpressionParseOperand",peek());
+        }
     }
 
 
