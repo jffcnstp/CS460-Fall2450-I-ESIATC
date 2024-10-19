@@ -49,6 +49,7 @@ public:
     void insertChild(Node* child) {
         if(root == nullptr) {
             root = child;
+            currentNode=root;
             return;
         }
        currentNode->leftChild=child;
@@ -62,6 +63,7 @@ public:
     {
         if(root == nullptr ) {
             root = sibling;
+            currentNode=root;
             return;
         }
         currentNode->rightSibling=sibling;
@@ -77,33 +79,20 @@ public:
     // Breadth-First Traversal
     void breadthFirstTraversal() {
         if (!root) return;
+        Node* traversal=root;
 
-        queue<Node*> q;
-        q.push(root);
-
-        while (!q.empty()) {
-            currentNode = q.front();  // Update current node
-            q.pop();
-
-            // Print current node data
-            cout << currentNode->data.getName() << " ";
-
-            // Add the left child to the queue
-            if (currentNode->leftChild) {
-                q.push(currentNode->leftChild);
+        while(traversal)
+        {
+            cout<<traversal->data.getName()<<" ";
+            if(traversal->rightSibling)
+                traversal=traversal->rightSibling;
+            else if(traversal->leftChild) {
+                cout<<endl;
+                traversal = traversal->leftChild;
             }
-
-
-            Node* sibling = currentNode->leftChild;
-            while (sibling) {
-                if (sibling->rightSibling) {
-                    q.push(sibling->rightSibling);
-                }
-                sibling = sibling->rightSibling;
-            }
+            else
+                break;
         }
-
-        cout << endl;
     }
 };
 
@@ -186,14 +175,18 @@ public:
                     case(Type):
                     {
                         parseVariableDeclaration();
+                        break;
                     }
                     case(Identifier):
+                    case(Function):
                     {
                        parseVariableOperation();
+                       break;
                     }
                     case(RETURN):
                     {
                         parseReturn();
+                        break;
                     }
                 }
             }
@@ -289,20 +282,20 @@ public:
         if(match("IDENTIFIER")  && keywordcheck(peek().getName())==Type)
             tree.insertSibling(new Node(peek()));
         else
-            Errorstatement("FunctionDeclarationKeyword",peek());
+            Errorstatement("FunctionDeclaration Keyword",peek());
 
         nextToken();
 
         if(match("IDENTIFIER")  && keywordcheck(peek().getName())==Identifier)
             tree.insertSibling(new Node(peek()));
         else
-            Errorstatement("FunctionDeclarationIdentifier",peek());
+            Errorstatement("FunctionDeclaration Identifier",peek());
         nextToken();
 
         if(match("L_PAREN") )
             tree.insertSibling(new Node(peek()));
         else
-            Errorstatement("FunctionDeclarationLPAREN",peek());
+            Errorstatement("FunctionDeclaration LPAREN",peek());
         nextToken();
 
         while(multipleparameters==true)
@@ -320,7 +313,7 @@ public:
         if(match("R_PAREN"))
             tree.insertSibling(new Node(peek()));
         else
-            Errorstatement("FunctionDeclaration",peek());
+            Errorstatement("FunctionDeclaration R_PAREN",peek());
 
         nextToken();
     }
@@ -358,7 +351,7 @@ public:
     {
         bool loop=true;
         tree.insertChild(new Node(peek()));
-
+        nextToken();
 
         while(loop) {
             loop = false;
@@ -367,13 +360,13 @@ public:
                 tree.insertSibling(new Node(peek()));
                 nextToken();
             } else
-                Errorstatement("VariableDeclaration", peek());
+                Errorstatement("VariableDeclaration IDENTIFIER", peek());
 
             if (match("L_BRACKET")) {
                 parseBracket();
             }
             if (match("ASSIGNMENT_OPERATOR")) {
-                //parseenumerical/booleanexpression();
+                parseExpression();
             }
             if(match("COMMA"))
             {
@@ -527,8 +520,8 @@ public:
 
         //case1: if, case2: while
         if (match("IF")   && keywordcheck(peek().getName()) == Conditional) {
-            tree.insertSibling(new Node(peek()));
-
+            tree.insertChild(new Node(peek()));
+            nextToken();
 
             if (match("L_PAREN") )
                 tree.insertSibling(new Node(peek()));
@@ -536,7 +529,7 @@ public:
                 Errorstatement("If", peek());
             nextToken();
 
-            //parseBoolean();
+            parseExpression();
 
             if (match("R_PAREN")  )
                 tree.insertSibling(new Node(peek()));
@@ -555,7 +548,7 @@ public:
                 Errorstatement("While", peek());
              nextToken();
 
-            //parseBoolean();
+            parseExpression();
 
             if (match("R_PAREN")  )
                 tree.insertSibling(new Node(peek()));
@@ -630,7 +623,7 @@ public:
     // Individual function soley designed for handling braces and things in-between
     // Parameters: braceCounter, helps keep track of number of '{' there are
     // braceLocation, helps keep track of the line number of a given brace
-    void parseBrace(int braceCounter, vector<int> braceLocation) {
+    void parseBrace(int &braceCounter, vector<int> &braceLocation) {
         // Add some kind of node
         Token tokenused = peek();
 
@@ -722,17 +715,18 @@ public:
 
             }
             else
-                Errorstatement("ExpressionParseOperator", peek());
+                Errorstatement("ExpressionParse Operator", peek());
 
 
-            if(find(operandlist.begin(),operandlist.end(),peek().getType())== operandlist.end()) //if the token is in operandlist
+            if(find(operandlist.begin(),operandlist.end(),peek().getType()) != operandlist.end()) //if the token is in operandlist
             {
                 loop = true;
                 tree.insertSibling(new Node(peek()));
                 nextToken();
             }
-            else
-                Errorstatement("ExpressionParseOperand",peek());
+        }
+        if( !match("R_PAREN") && !match("SEMICOLON") ) {
+            Errorstatement("ExpressionParse Operand", peek());
         }
     }
 
@@ -763,6 +757,7 @@ int main() {
     tokenlist = Tokenize(tokenizefile + std::to_string(i) + ".c");
     Parser CST(tokenlist);
     CST.buildCST();
+    cout<<"CST build successfully"<<endl;
     CST.tree.breadthFirstTraversal();
 
     return 0;
