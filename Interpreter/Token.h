@@ -61,9 +61,9 @@ vector<Token> Tokenize(const string& fileName) {
                 }
                 else if (idenname == "return") {
                     tokenlist.emplace_back("RETURN", "return",linenumber);
-                } else if (idenname == "true") {
+                } else if (idenname == "TRUE") {
                     tokenlist.emplace_back("TRUE", "true",linenumber);
-                } else if (idenname == "false") {
+                } else if (idenname == "FALSE") {
                     tokenlist.emplace_back("FALSE", "false",linenumber);
                 } else if (idenname == "if") {
                     tokenlist.emplace_back("IF", "if",linenumber);

@@ -49,6 +49,9 @@ public:
        currentNode=child;
     }
 
+    //Purpose: inserts a sibling into the LCRS tree
+    //input:  a Node
+    //output:  the node is attached to the current node's sibling pointer.  Current node is changed to the sibling node
     void insertSibling(Node* sibling)
     {
         currentNode->rightSibling=sibling;
@@ -117,11 +120,6 @@ public:
             return tokens[current-1];
     }
 
-    void error(const std::string& message) {
-        std::cerr << "CST Error: " << message << " at line: " << tokens[current].line << std::endl;
-        exit(EXIT_FAILURE); // Stop execution on error
-    }
-
     bool match(const string& type) {
         if (peek().getType() == type) {
             nextToken();
@@ -137,6 +135,10 @@ public:
         return node;
     }
 
+
+    //PURPOSE: checks the parameter string  for what type of identifier it is and returns an int
+    //INPUT:  string name (ideally the string passed is from Token.name
+    //Output: an enum which describes the identifier.
     int keywordcheck(string name)
     {
         for(auto &word: typekeyword)
@@ -176,16 +178,15 @@ public:
                 {
                     case(Type):
                     {
-                        parseVariableDeclaration();
+                        parseVariableDeclaration(false);
                     }
                     case(Identifier):
                     {
-                        //variableoperation
-                        //functioncall
+                       // parseVariableOperation();
                     }
                     case(RETURN):
                     {
-                        //returnstatement
+                       // parseReturn();
                     }
                 }
             }
@@ -269,72 +270,111 @@ public:
 
 
     //this function is called when the token is found to be FUNCTION
+    //input: local variable Token tokenused, local variablle bool multipleparameters
+    //output: creates a whole sibling chain out of a function declaration and adds it to the tree
     void parseFunctionDeclaration()
     {
-        Token tokenused=peek();
+
         bool multipleparameters=true;
-        tree.insertChild(new Node(tokenused)); //add the function to the tree
-        tokenused=nextToken();
+        tree.insertChild(new Node(peek())); //add the function to the tree
+        nextToken();
 
-        if(tokenused.getType() == "IDENTIFIER" && keywordcheck(tokenused.getName())==Type)
-            tree.insertSibling(new Node(tokenused));
+        if(match("IDENTIFIER")  && keywordcheck(peek().getName())==Type)
+            tree.insertSibling(new Node(peek()));
         else
-            Errorstatement("FunctionDeclaration",tokenused);
+            Errorstatement("FunctionDeclaration",peek());
 
-        tokenused=nextToken();
+        nextToken();
 
-        if(tokenused.getType() == "IDENTIFIER" && keywordcheck(tokenused.getName())==Identifier)
-            tree.insertSibling(new Node(tokenused));
+        if(match("IDENTIFIER")  && keywordcheck(peek().getName())==Identifier)
+            tree.insertSibling(new Node(peek()));
         else
-            Errorstatement("FunctionDeclaration",tokenused);
-        tokenused=nextToken();
+            Errorstatement("FunctionDeclaration",peek());
+        nextToken();
 
-        if(tokenused.getType() =="L_PAREN")
-            tree.insertSibling(new Node(tokenused));
+        if(match("L_PAREN") )
+            tree.insertSibling(new Node(peek()));
         else
-            Errorstatement("FunctionDeclaration",tokenused);
-        tokenused=nextToken();
+            Errorstatement("FunctionDeclaration",peek());
+        nextToken();
+
         while(multipleparameters==true)
         {
             multipleparameters = false;
-            if (tokenused.getType() == "IDENTIFIER" && keywordcheck(tokenused.getName()) == Type)
-                tree.insertSibling(new Node(tokenused));
-            else
-                Errorstatement("FunctionDeclaration", tokenused);
-            tokenused = nextToken();
-
-            if (tokenused.getType() == "IDENTIFIER" && keywordcheck(tokenused.getName()) == Identifier)
-                tree.insertSibling(new Node(tokenused));
-            else
-                Errorstatement("FunctionDeclaration", tokenused);
-            tokenused = nextToken();
+            parseFunctionDeclarationParameter();
 
             if(match("COMMA"))
             {
                 tree.insertSibling((new Node(peek())));
-                tokenused=nextToken();
+                nextToken();
                 multipleparameters = true;
             }
         }
-        if(tokenused.getType()=="R_PAREN")
-            tree.insertSibling(new Node(tokenused));
+        if(match("R_PAREN"))
+            tree.insertSibling(new Node(peek()));
         else
-            Errorstatement("FunctionDeclaration",tokenused);
+            Errorstatement("FunctionDeclaration",peek());
 
         nextToken();
     }
 
-    void parseVariableDeclaration()
+    void parseFunctionDeclarationParameter()
     {
-        tree.insertChild(new Node(peek()));
-        Token tokenused = nextToken();
+        Token tokenused=peek();
 
-        if(match("IDENTIFIER") && keywordcheck(tokenused.getName())==0)
+        if(match("IDENTIFIER") && keywordcheck(tokenused.getName())==Type)
         {
-
+            tree.insertSibling(new Node(tokenused));
+            tokenused=nextToken();
         }
         else
-            Errorstatement("VariableDeclaration",tokenused);
+            Errorstatement("FunctionDeclarationParameter",tokenused);
+
+        if (match("IDENTIFIER") && keywordcheck(tokenused.getName()) == Identifier) {
+            tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+        } else
+            Errorstatement("VariableDeclaration", tokenused);
+
+        if (match("L_BRACKET")) {
+            parseBracket();
+        }
+
+        if(match("ASSIGNMENT_OPERATOR")){
+            //parseNumerical();
+        }
+
+    }
+
+    //Fuction purpose:  parses a snippet of code following the format keyword->identifier->(optional []) -> optional(=)
+    void parseVariableDeclaration()
+    {
+        bool loop=true;
+        tree.insertChild(new Node(peek()));
+
+
+        while(loop) {
+            loop = false;
+
+            if (match("IDENTIFIER") && keywordcheck(peek().getName()) == Identifier) {
+                tree.insertSibling(new Node(peek()));
+                nextToken();
+            } else
+                Errorstatement("VariableDeclaration", peek());
+
+            if (match("L_BRACKET")) {
+                parseBracket();
+            }
+            if (match("ASSIGNMENT_OPERATOR")) {
+                //parseenumerical/booleanexpression();
+            }
+            if(match("COMMA"))
+            {
+                loop = true;
+                tree.insertSibling(new Node(peek()));
+                nextToken();
+            }
+        }
 
     }
 
@@ -342,37 +382,37 @@ public:
     void parseString() {
         //i assume that at this point, the current token is known to be a DblQuote or SglQuote
         Token tokenused = peek();
-        if (tokenused.getType()=="DOUBLE_QUOTE" && keywordcheck(tokenused.getName()) == Identifier) {
+        if (match("DOUBLE_QUOTE") ) {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
 
             //invalid: last char of string is "\"
 
-            if (tokenused.getName().back() == '\\' || tokenused.getType() != "STRING" )
+            if ( !match("STRING") || tokenused.getName().back() == '\\')
                 Errorstatement("String", tokenused);
             else
                 tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
 
-            if (tokenused.getType() == "DOUBLE_QUOTE" && keywordcheck(tokenused.getName()) == Identifier)
+            if (match("DOUBLE_QUOTE")  )
                 tree.insertSibling(new Node(tokenused));
             else
                 Errorstatement("String", tokenused);
             tokenused = nextToken();
         }
-        else if (tokenused.getType()=="SINGLE_QUOTE" && keywordcheck(tokenused.getName()) == Identifier) {
+        else if (match("SINGLE_QUOTE") ) {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
 
             //invalid: last char of string is "\"
 
-            if (tokenused.getName().back() == '\\' || tokenused.getType() != "STRING" )
+            if (!match("STRING")||  tokenused.getName().back() == '\\'  )
                 Errorstatement("String", tokenused);
             else
                 tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
 
-            if (tokenused.getType() == "SINGLE_QUOTE" && keywordcheck(tokenused.getName()) == Identifier)
+            if (match("SINGLE_QUOTE") )
                 tree.insertSibling(new Node(tokenused));
             else
                 Errorstatement("String", tokenused);
@@ -382,72 +422,70 @@ public:
 
     //also for while statements?
     void parseIfWhileStatement() {
-        Token tokenused = peek();
-        //case1: if, case2: while
-        if (tokenused.getType() == "If" && keywordcheck(tokenused.getName()) == Conditional) {
-            tree.insertSibling(new Node(tokenused));
-            tokenused = nextToken();
 
-            if (tokenused.getType() == "L_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
-                tree.insertSibling(new Node(tokenused));
+        //case1: if, case2: while
+        if (match("IF")   && keywordcheck(peek().getName()) == Conditional) {
+            tree.insertSibling(new Node(peek()));
+
+
+            if (match("L_PAREN") )
+                tree.insertSibling(new Node(peek()));
             else
-                Errorstatement("If", tokenused);
-            tokenused = nextToken();
+                Errorstatement("If", peek());
+            nextToken();
 
             //parseBoolean();
 
-            if (tokenused.getType() == "R_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
-                tree.insertChild(new Node(tokenused));
+            if (match("R_PAREN")  )
+                tree.insertChild(new Node(peek()));
             else
-                Errorstatement("If", tokenused);
-            tokenused = nextToken();
+                Errorstatement("If", peek());
+            nextToken();
         }
 
-        else if (tokenused.getType() == "While" && keywordcheck(tokenused.getName()) == Conditional) {
-            tree.insertSibling(new Node(tokenused));
-            tokenused = nextToken();
+        else if (match("WHILE")   && keywordcheck(peek().getName()) == Conditional) {
+            tree.insertSibling(new Node(peek()));
+            nextToken();
 
-            if (tokenused.getType() == "L_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
-                tree.insertSibling(new Node(tokenused));
+            if (match("L_PAREN")  )
+                tree.insertSibling(new Node(peek()));
             else
-                Errorstatement("While", tokenused);
-            tokenused = nextToken();
+                Errorstatement("While", peek());
+             nextToken();
 
             //parseBoolean();
 
-            if (tokenused.getType() == "R_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
-                tree.insertChild(new Node(tokenused));
+            if (match("R_PAREN")  )
+                tree.insertChild(new Node(peek()));
             else
-                Errorstatement("While", tokenused);
-            tokenused = nextToken();
+                Errorstatement("While", peek());
+            nextToken();
         }
 
         nextToken();
     }
 
     void parseElseStatement() {
-        Token tokenused = peek();
-        if (tokenused.getType() == "Else" && keywordcheck(tokenused.getName()) == Conditional)
-            tree.insertSibling(new Node(tokenused));
+        if (match("ELSE")   && keywordcheck(peek().getName()) == Conditional)
+            tree.insertSibling(new Node(peek()));
         else
-            Errorstatement("Else", tokenused);
-        tokenused = nextToken();
+            Errorstatement("Else", peek());
+        nextToken();
 
-        if (tokenused.getType() == "L_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
-            tree.insertSibling(new Node(tokenused));
+        if (match("L_PAREN")  )
+            tree.insertSibling(new Node(peek()));
         else
-            Errorstatement("Else", tokenused);
-        tokenused = nextToken();
+            Errorstatement("Else", peek());
+         nextToken();
 
         //parseBoolean()
 
-        if (tokenused.getType() == "R_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
-            tree.insertChild(new Node(tokenused));
+        if (match("R_PAREN")  )
+            tree.insertChild(new Node(peek()));
         else
-            Errorstatement("Else", tokenused);
-        tokenused = nextToken();
-
+            Errorstatement("Else", peek());
         nextToken();
+
     }
 
 
@@ -532,7 +570,7 @@ void parseBracket() {
     // Individual function soley designed for handling semicolons
     void parseSemicolon() {
         // Init token
-            tree.insertChild(new Node(peek()));
+            tree.insertSibling(new Node(peek()));
             nextToken();
     }
 
@@ -552,11 +590,17 @@ int main() {
     vector<Token> tokenlist;
     string fileName ="programming_assignment_3-test_file_";
     string tokenizefile="test_file";
-    for(int i=1; i <11; i++)
-    {
-        ignoreComments(fileName+std::to_string(i)+".c", tokenizefile+std::to_string(i)+".c");
-        tokenlist = Tokenize(tokenizefile+std::to_string(i)+".c");
-        continue;
-    }
+
+//    for(int i=1; i <11; i++) {
+//        ignoreComments(fileName + std::to_string(i) + ".c", tokenizefile + std::to_string(i) + ".c");
+//        tokenlist = Tokenize(tokenizefile + std::to_string(i) + ".c");
+//        continue;
+//    }
+    int i=1;
+    ignoreComments(fileName + std::to_string(i) + ".c", tokenizefile + std::to_string(i) + ".c");
+    tokenlist = Tokenize(tokenizefile + std::to_string(i) + ".c");
+    Parser CST(tokenlist);
+    CST.buildCST();
+
     return 0;
 }
