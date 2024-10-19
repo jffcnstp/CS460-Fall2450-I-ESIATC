@@ -202,10 +202,12 @@ public:
             {
                 parseElseStatement();
             }
-//           else if(match("FOR"))
-//            {
-//              parseForStatement();
-//            }
+           else if(match("FOR"))
+            {
+               cout<<"Have not build the parseFor fuction yet"<<endl;
+               exit(0);
+              //parseForStatement();
+            }
 
             //procedure declaration
             if(match("SEMICOLON"))
