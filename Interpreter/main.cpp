@@ -387,6 +387,10 @@ public:
         tree.insertChild(new Node(peek()));
         nextToken();
 
+        if(match("L_BRACKET"))
+        {
+         parseBracket();
+        }
         if(match("ASSIGNMENT_OPERATOR"))
         {
             tree.insertSibling(new Node(peek()));
@@ -420,16 +424,12 @@ public:
     void parseFunctionCallParameters()
     {
         bool loop=true;
+
         while(loop)
         {
             loop = false;
-            if(match("DOUBLE_QUOTE")||match("SINGLE_QUOTE"))
-                parseString();
-            else
-            {
-                tree.insertSibling(new Node(peek()));
-                nextToken();
-            }
+            parseExpression();
+
             if(match("COMMA"))
             {
                 loop = true;
@@ -485,7 +485,7 @@ public:
             //invalid: last char of string is "\"
 
             if ( !match("STRING") || tokenused.getName().back() == '\\')
-                Errorstatement("String wrongtokencategory", tokenused);
+                Errorstatement("String IllegalString", tokenused);
             else
                 tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
@@ -503,7 +503,7 @@ public:
             //invalid: last char of string is "\"
 
             if (!match("STRING")||  tokenused.getName().back() == '\\'  )
-                Errorstatement("String wrongTokenCategory", tokenused);
+                Errorstatement("String Illegalstring", tokenused);
             else
                 tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
@@ -575,21 +575,26 @@ public:
     void parseBracket()
     {
         // Add some kind of node
-        Token tokenused = peek();
+
 
         // Expecting a '['
 
         if (match("L_BRACKET")) {
-            tree.insertSibling(new Node(tokenused));
-            tokenused = nextToken();
+            tree.insertSibling(new Node(peek()));
+            nextToken();
         }
         else {
-            Errorstatement("Bracket L_BRACKET", tokenused);
+            Errorstatement("Bracket L_BRACKET", peek());
         }
 
         // Negative Integer error
         if(match("MINUS")) {
-            Errorstatement("Bracket ILLEGALMINUS",tokenused);
+            Errorstatement("Bracket ILLEGALMINUS",peek());
+        }
+        if(match("PLUS"))
+        {
+            tree.insertSibling(new Node(peek()));
+            nextToken();
         }
 
         parseExpression();
@@ -597,11 +602,11 @@ public:
         // Expecting ']'
 
         if (match("R_BRACKET")) {
-            tree.insertSibling(new Node(tokenused));
+            tree.insertSibling(new Node(peek()));
         }
         else
         {
-            Errorstatement("Bracket R_BRACKET", tokenused);
+            Errorstatement("Bracket R_BRACKET", peek());
         }
         nextToken();
     }
@@ -612,14 +617,14 @@ public:
     // braceLocation, helps keep track of the line number of a given brace
     void parseBrace(int &braceCounter, vector<int> &braceLocation) {
         // Add some kind of node
-        Token tokenused = peek();
+
 
         // Expecting a '{'
         if (match("L_BRACE")) {
             braceCounter++; // increment
-            braceLocation.push_back(tokenused.getLine()); // Push to vector
-            tree.insertChild(new Node(tokenused));
-            tokenused = nextToken();
+            braceLocation.push_back(peek().getLine()); // Push to vector
+            tree.insertChild(new Node(peek()));
+            nextToken();
         }
         // Expecting '}'
        else if (match("R_BRACE")) {
@@ -630,8 +635,8 @@ public:
                 exit(-1);
             }
             braceLocation.pop_back(); // Push to vector
-            tree.insertChild(new Node(tokenused));
-            tokenused = nextToken();
+            tree.insertChild(new Node(peek()));
+            nextToken();
         }
 
     }
@@ -664,7 +669,7 @@ public:
                 nextToken();
             }
             else if ( ( match("BOOLEAN_NOT") && tokens[current + 1].getType() == "IDENTIFIER" && keywordcheck(tokens[current+1].getName()) == Identifier)
-            || ( match("IDENTIFIER") && keywordcheck(peek().getName())==Identifier) )  // not+identifier or just identifier
+            || ( match("IDENTIFIER") && keywordcheck(peek().getName())==Identifier) || match("TRUE") || match("FALSE") )  // not+identifier or just identifier
             {
                 if (match("BOOLEAN_NOT")) //insert ! if there is one
                 {
@@ -675,7 +680,10 @@ public:
                 tree.insertSibling(new Node(peek())); //insert identifier
                 nextToken();
 
-                if (match("L_PAREN")) { //insert function parameters if the identifier is a function
+                if (match("L_BRACKET"))
+                    parseBracket();
+
+                else if (match("L_PAREN")) { //insert function parameters if the identifier is a function
                     tree.insertSibling(new Node(peek()));
                     nextToken();
                     parseFunctionCallParameters();
@@ -712,7 +720,7 @@ public:
                 nextToken();
             }
         }
-        if( !match("R_PAREN") && !match("SEMICOLON") ) {
+        if( !match("R_PAREN") && !match("SEMICOLON") && !match("R_BRACKET") && !match("COMMA"))  {
             Errorstatement("ExpressionParse Operand", peek());
         }
     }
@@ -739,7 +747,7 @@ int main() {
 //        tokenlist = Tokenize(tokenizefile + std::to_string(i) + ".c");
 //        continue;
 //    }
-    int i=1;
+    int i=10;
     ignoreComments(fileName + std::to_string(i) + ".c", tokenizefile + std::to_string(i) + ".c");
     tokenlist = Tokenize(tokenizefile + std::to_string(i) + ".c");
     Parser CST(tokenlist);
