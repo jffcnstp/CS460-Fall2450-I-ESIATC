@@ -47,6 +47,10 @@ public:
 
     // Insert child under the given parent
     void insertChild(Node* child) {
+        if(root == nullptr) {
+            root = child;
+            return;
+        }
        currentNode->leftChild=child;
        currentNode=child;
     }
@@ -56,6 +60,10 @@ public:
     //output:  the node is attached to the current node's sibling pointer.  Current node is changed to the sibling node
     void insertSibling(Node* sibling)
     {
+        if(root == nullptr ) {
+            root = sibling;
+            return;
+        }
         currentNode->rightSibling=sibling;
         currentNode=sibling;
     }
@@ -124,7 +132,6 @@ public:
 
     bool match(const string& type) {
         if (peek().getType() == type) {
-            nextToken();
             return true;
         }
         return false;
@@ -282,20 +289,20 @@ public:
         if(match("IDENTIFIER")  && keywordcheck(peek().getName())==Type)
             tree.insertSibling(new Node(peek()));
         else
-            Errorstatement("FunctionDeclaration",peek());
+            Errorstatement("FunctionDeclarationKeyword",peek());
 
         nextToken();
 
         if(match("IDENTIFIER")  && keywordcheck(peek().getName())==Identifier)
             tree.insertSibling(new Node(peek()));
         else
-            Errorstatement("FunctionDeclaration",peek());
+            Errorstatement("FunctionDeclarationIdentifier",peek());
         nextToken();
 
         if(match("L_PAREN") )
             tree.insertSibling(new Node(peek()));
         else
-            Errorstatement("FunctionDeclaration",peek());
+            Errorstatement("FunctionDeclarationLPAREN",peek());
         nextToken();
 
         while(multipleparameters==true)
@@ -733,7 +740,7 @@ public:
 
     void Errorstatement(string fromwhere,Token tokenused)
     {
-        cout << fromwhere <<" error on line: " << tokenused.getLine() << " Token name: "<<tokenused.getName() <<"Token type: "<<tokenused.getType() << endl;
+        cout << fromwhere <<" error on line: " << tokenused.getLine() << " Token name: "<<tokenused.getName() <<" Token type: "<<tokenused.getType() << endl;
         exit(-1);
     }
 
@@ -756,6 +763,7 @@ int main() {
     tokenlist = Tokenize(tokenizefile + std::to_string(i) + ".c");
     Parser CST(tokenlist);
     CST.buildCST();
+    CST.tree.breadthFirstTraversal();
 
     return 0;
 }
