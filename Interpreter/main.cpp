@@ -204,9 +204,7 @@ public:
             }
            else if(match("FOR"))
             {
-               cout<<"Have not build the parseFor fuction yet"<<endl;
-               exit(0);
-              //parseForStatement();
+              parseForStatement();
             }
 
             //procedure declaration
@@ -569,6 +567,73 @@ public:
 
     }
 
+    void parseForStatement() {
+
+        //first statement is assumed to be the form variable = integer
+        Token tokenused = peek();
+        if (tokenused.getType() == "FOR" && keywordcheck(tokenused.getName()) == Conditional)
+            tree.insertChild(new Node(tokenused));
+        else
+            Errorstatement("For FOR", tokenused);
+        tokenused = nextToken();
+
+        if (tokenused.getType() == "L_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
+            tree.insertSibling(new Node(tokenused));
+        else
+            Errorstatement("For L_PAREN", tokenused);
+        tokenused = nextToken();
+
+        if (tokenused.getType() == "IDENTIFIER" && keywordcheck(tokenused.getName()) == Identifier)
+            tree.insertSibling(new Node(tokenused));
+        else
+            Errorstatement("For statement1 operand1", tokenused);
+        tokenused = nextToken();
+
+        if (tokenused.getType() == "ASSIGNMENT_OPERATOR" && keywordcheck(tokenused.getName()) == Identifier)
+            tree.insertSibling(new Node(tokenused));
+        else
+            Errorstatement("For statement1 assignment", tokenused);
+        tokenused = nextToken();
+
+        if (tokenused.getType() == "INTEGER" && keywordcheck(tokenused.getName()) == Identifier)
+            tree.insertSibling(new Node(tokenused));
+        else
+            Errorstatement("For statement1 operand2", tokenused);
+        tokenused = nextToken();
+
+        parseSemicolon();
+
+        //second statement handled entirely by parseExpression
+        parseExpression();
+
+        parseSemicolon();
+
+        //third statement has the form variable = (expression)
+        //this line is here because parseSemicolon and parseExpression do not update tokenused
+        tokenused = peek();
+        if (tokenused.getType() == "IDENTIFIER" && keywordcheck(tokenused.getName()) == Identifier)
+            tree.insertSibling(new Node(tokenused));
+        else
+            Errorstatement("For statement3 operand1", tokenused);
+        tokenused = nextToken();
+
+        if (tokenused.getType() == "ASSIGNMENT_OPERATOR" && keywordcheck(tokenused.getName()) == Identifier)
+            tree.insertSibling(new Node(tokenused));
+        else
+            Errorstatement("For statement3 assignment", tokenused);
+        tokenused = nextToken();
+
+        parseExpression();
+
+        //same as above
+        tokenused = peek();
+        if (tokenused.getType() == "R_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
+            tree.insertSibling(new Node(tokenused));
+        else
+            Errorstatement("For R_PAREN", tokenused);
+        tokenused = nextToken();
+    }
+
 
     // PA3: RDP - Bracket function
     // Individual function soley designed for handling brackets
@@ -747,7 +812,7 @@ int main() {
 //        tokenlist = Tokenize(tokenizefile + std::to_string(i) + ".c");
 //        continue;
 //    }
-    int i=10;
+    int i=3;
     ignoreComments(fileName + std::to_string(i) + ".c", tokenizefile + std::to_string(i) + ".c");
     tokenlist = Tokenize(tokenizefile + std::to_string(i) + ".c");
     Parser CST(tokenlist);
