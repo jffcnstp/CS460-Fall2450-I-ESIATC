@@ -575,6 +575,27 @@ void parseBracket() {
     }
 
 
+// PA3: RDP - parseNumerical()
+// Handles numerical expressions, recursively gathers all tokens until an invalid token appears
+    void parseNumerical() {
+        // init token
+        Token tokenused = peek();
+        
+        // Base case: next token is not an integer or an operation
+        // NOTE: be cautious with the last check, it might not be right.
+        if (!match("INTEGER") && (!match("PLUS") || !match("MINUS") ||
+            !match("DIVIDE") || !match("AESTERISK") || !match("MODULO") ||
+            !match("CARET")) && (match("IDENTIFIER") && keywordcheck(tokenused.getName()) ==0)) {
+            return;
+        }
+
+        // Recursive call: 
+        tree.insertChild(new Node(tokenused));
+        nextToken(); // unsure if this might screw it up
+        parseNumerical();
+    }
+
+
 
     void Errorstatement(string fromwhere,Token tokenused)
     {
