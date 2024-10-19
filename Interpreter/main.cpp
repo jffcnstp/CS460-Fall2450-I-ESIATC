@@ -11,7 +11,7 @@ using namespace std;
 
 std::string typekeyword[]={"int","bool","char","void"};
 std::string conditionalkeyword[]={"if","for","while","else"};
-vector<string> operandlist={"PLUS","MINUS","ASTERISK","DIVIDE","MODULO","LT_EQUAL","LT","GT_EQUAL","GT","BOOLEAN_AND","BOOLEAN_OR","BOOLEAN_NOT_EQUAL"};
+vector<string> operandlist={"PLUS","MINUS","ASTERISK","DIVIDE","MODULO","LT_EQUAL","LT","GT_EQUAL","GT","BOOLEAN_AND","BOOLEAN_OR","BOOLEAN_NOT_EQUAL","BOOLEAN_EQUAL"};
 //will need an array of reserved functions in the future
 
 enum keywords{Identifier=0,Type=1,Conditional=2,RETURN=3,Function=4};
@@ -232,40 +232,33 @@ public:
     void parseProcedure()
     {
         tree.insertChild(new Node(peek()));
-        Token tokenused=nextToken();
+        nextToken();
 
         if(match("IDENTIFIER") && keywordcheck(peek().getName())==Identifier)
         {
-            tree.insertSibling(new Node(tokenused));
-            tokenused=nextToken();
+            tree.insertSibling(new Node(peek()));
+            nextToken();
         }
         else
-            Errorstatement("Procedure Identifier",tokenused);
+            Errorstatement("Procedure Identifier",peek());
 
         if(match("L_PAREN"))
         {
-            tree.insertSibling(new Node(tokenused));
-            tokenused=nextToken();
+            tree.insertSibling(new Node(peek()));
+            nextToken();
         }
         else
-            Errorstatement("Procedure L_PAREN",tokenused);
+            Errorstatement("Procedure L_PAREN",peek());
 
-        if(match("IDENTIFIER"))//EDIT EMERGENCY
-        {
-            //THIS ONLY WORKS IF THE PROCEDURE IS MAIN.  IF HE MAKES A PROCEDURE THAT HAS DATA TYPES OR IS A FUNCTION DECLARATION CHANGE THIS
-            tree.insertSibling(new Node(tokenused));
-            tokenused=nextToken();
-        }
-        else
-            Errorstatement("Procedure FunctionDeclaration",tokenused);
+        parseFunctionDeclarationParameter();
 
         if(match("R_PAREN"))
         {
-            tree.insertSibling(new Node(tokenused));
-            tokenused=nextToken();
+            tree.insertSibling(new Node(peek()));
+            nextToken();
         }
         else
-            Errorstatement("Procedure R_PAREN",tokenused);
+            Errorstatement("Procedure R_PAREN",peek());
 
 
     }
@@ -327,7 +320,13 @@ public:
         if(match("IDENTIFIER") && keywordcheck(tokenused.getName())==Type)
         {
             tree.insertSibling(new Node(tokenused));
+            if(peek().getName()=="void")
+            {
+                nextToken();
+                return;
+            }
             tokenused=nextToken();
+
         }
         else
             Errorstatement("FunctionDeclarationParameter Keyword",tokenused);
@@ -563,26 +562,11 @@ public:
 
     void parseElseStatement() {
         if (match("ELSE")   && keywordcheck(peek().getName()) == Conditional)
-            tree.insertSibling(new Node(peek()));
+            tree.insertChild(new Node(peek()));
         else
             Errorstatement("Else ELSE", peek());
         nextToken();
 
-        if (match("L_PAREN")  )
-        {
-            tree.insertSibling(new Node(peek()));
-            nextToken();
-
-            parseExpression();
-
-            if (match("R_PAREN"))
-                tree.insertSibling(new Node(peek()));
-            else
-                Errorstatement("Else R_PAREN", peek());
-            nextToken();
-        }
-        else
-            Errorstatement("Else L_PAREN", peek());
     }
 
 
