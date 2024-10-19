@@ -238,7 +238,7 @@ public:
             tokenused=nextToken();
         }
         else
-            Errorstatement("Procedure",tokenused);
+            Errorstatement("Procedure Identifier",tokenused);
 
         if(match("L_PAREN"))
         {
@@ -246,7 +246,7 @@ public:
             tokenused=nextToken();
         }
         else
-            Errorstatement("Procedure",tokenused);
+            Errorstatement("Procedure L_PAREN",tokenused);
 
         if(match("IDENTIFIER"))//EDIT EMERGENCY
         {
@@ -255,7 +255,7 @@ public:
             tokenused=nextToken();
         }
         else
-            Errorstatement("Procedure",tokenused);
+            Errorstatement("Procedure FunctionDeclaration",tokenused);
 
         if(match("R_PAREN"))
         {
@@ -263,7 +263,7 @@ public:
             tokenused=nextToken();
         }
         else
-            Errorstatement("Procedure",tokenused);
+            Errorstatement("Procedure R_PAREN",tokenused);
 
 
     }
@@ -328,20 +328,20 @@ public:
             tokenused=nextToken();
         }
         else
-            Errorstatement("FunctionDeclarationParameter",tokenused);
+            Errorstatement("FunctionDeclarationParameter Keyword",tokenused);
 
-        if (match("IDENTIFIER") && keywordcheck(tokenused.getName()) == Identifier) {//EDIT EMERGENCY might need to parse brackets
+        if (match("IDENTIFIER") && keywordcheck(tokenused.getName()) == Identifier) {
             tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
         } else
-            Errorstatement("FunctionDeclarationParameter", tokenused);
+            Errorstatement("FunctionDeclarationParameter Identifier", tokenused);
 
         if (match("L_BRACKET")) {
             parseBracket();
         }
 
         if(match("ASSIGNMENT_OPERATOR")){
-            //parseNumerical();
+            parseExpression();
         }
 
     }
@@ -409,11 +409,11 @@ public:
                 nextToken();
             }
             else
-                Errorstatement("VariableOperation",peek());
+                Errorstatement("VariableOperation R_PAREN",peek());
 
         }
         if(!match("SEMICOLON"))
-            Errorstatement("VariableOperation",peek());
+            Errorstatement("VariableOperation SEMICOLON",peek());
 
     }
     void parseFunctionCallParameters()
@@ -438,7 +438,7 @@ public:
 
         }
         if(!match("R_PAREN"))
-            Errorstatement("FunctionCallParameter",peek());
+            Errorstatement("FunctionCallParameter R_PAREN",peek());
     }
     //Purpose: parses and inserts the return statement into the tree without the semicolon
     //Input: current token should be on a RETURN type
@@ -462,15 +462,15 @@ public:
                 nextToken();
             }
             else
-                Errorstatement("Return",peek());
+                Errorstatement("Return R_PAREN",peek());
         }
-        else if(match("IDENTIFIER") && keywordcheck(peek().getName())==Identifier)//EDIT EMERGENCY might need to parse brackets
+        else if(match("IDENTIFIER") && keywordcheck(peek().getName())==Identifier)//EDIT EMERGENCY might need to add parse brackets
         {
             tree.insertSibling(new Node(peek()));
             nextToken();
         }
         if(!match("SEMICOLON"))
-            Errorstatement("Return",peek());
+            Errorstatement("Return semicolon",peek());
     }
 
     //this function is called when the token is a string (quote -> string -> quote)
@@ -484,7 +484,7 @@ public:
             //invalid: last char of string is "\"
 
             if ( !match("STRING") || tokenused.getName().back() == '\\')
-                Errorstatement("String", tokenused);
+                Errorstatement("String wrongtokencategory", tokenused);
             else
                 tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
@@ -492,7 +492,7 @@ public:
             if (match("DOUBLE_QUOTE")  )
                 tree.insertSibling(new Node(tokenused));
             else
-                Errorstatement("String", tokenused);
+                Errorstatement("String Doublequote", tokenused);
             tokenused = nextToken();
         }
         else if (match("SINGLE_QUOTE") ) {
@@ -502,7 +502,7 @@ public:
             //invalid: last char of string is "\"
 
             if (!match("STRING")||  tokenused.getName().back() == '\\'  )
-                Errorstatement("String", tokenused);
+                Errorstatement("String wrongTokenCategory", tokenused);
             else
                 tree.insertSibling(new Node(tokenused));
             tokenused = nextToken();
@@ -510,7 +510,7 @@ public:
             if (match("SINGLE_QUOTE") )
                 tree.insertSibling(new Node(tokenused));
             else
-                Errorstatement("String", tokenused);
+                Errorstatement("String SingleQuote", tokenused);
             tokenused = nextToken();
         }
     }
@@ -526,7 +526,7 @@ public:
             if (match("L_PAREN") )
                 tree.insertSibling(new Node(peek()));
             else
-                Errorstatement("If", peek());
+                Errorstatement("If L_PAREN", peek());
             nextToken();
 
             parseExpression();
@@ -534,7 +534,7 @@ public:
             if (match("R_PAREN")  )
                 tree.insertSibling(new Node(peek()));
             else
-                Errorstatement("If", peek());
+                Errorstatement("If R_PAREN", peek());
             nextToken();
         }
 
@@ -545,7 +545,7 @@ public:
             if (match("L_PAREN")  )
                 tree.insertSibling(new Node(peek()));
             else
-                Errorstatement("While", peek());
+                Errorstatement("While L_PAREN", peek());
              nextToken();
 
             parseExpression();
@@ -553,7 +553,7 @@ public:
             if (match("R_PAREN")  )
                 tree.insertSibling(new Node(peek()));
             else
-                Errorstatement("While", peek());
+                Errorstatement("While R_PAREN", peek());
             nextToken();
         }
 
@@ -563,23 +563,24 @@ public:
         if (match("ELSE")   && keywordcheck(peek().getName()) == Conditional)
             tree.insertSibling(new Node(peek()));
         else
-            Errorstatement("Else", peek());
+            Errorstatement("Else ELSE", peek());
         nextToken();
 
         if (match("L_PAREN")  )
+        {
             tree.insertSibling(new Node(peek()));
+            nextToken();
+
+            parseExpression();
+
+            if (match("R_PAREN"))
+                tree.insertSibling(new Node(peek()));
+            else
+                Errorstatement("Else R_PAREN", peek());
+            nextToken();
+        }
         else
-            Errorstatement("Else", peek());
-         nextToken();
-
-        //parseBoolean()
-
-        if (match("R_PAREN")  )
-            tree.insertSibling(new Node(peek()));
-        else
-            Errorstatement("Else", peek());
-        nextToken();
-
+            Errorstatement("Else L_PAREN", peek());
     }
 
 
@@ -597,12 +598,12 @@ public:
             tokenused = nextToken();
         }
         else {
-            Errorstatement("Bracket", tokenused);
+            Errorstatement("Bracket L_BRACKET", tokenused);
         }
 
         // Negative Integer error
         if(match("MINUS")) {
-            Errorstatement("Bracket",tokenused);
+            Errorstatement("Bracket ILLEGALMINUS",tokenused);
         }
 
         parseExpression();
@@ -614,7 +615,7 @@ public:
         }
         else
         {
-            Errorstatement("Bracket", tokenused);
+            Errorstatement("Bracket R_BRACKET", tokenused);
         }
         nextToken();
     }
@@ -697,7 +698,7 @@ public:
                         tree.insertSibling(new Node(peek()));
                         nextToken();
                     } else
-                        Errorstatement("ExpressionParse", peek());
+                        Errorstatement("ExpressionParse R_PAREN", peek());
                 }
             }
             else if (match("L_PAREN"))
@@ -711,7 +712,7 @@ public:
                     tree.insertSibling(new Node(peek()));
                     nextToken();
                 } else
-                    Errorstatement("ExpressionParseR_PAREN", peek());
+                    Errorstatement("ExpressionParse R_PAREN", peek());
 
             }
             else
@@ -757,7 +758,7 @@ int main() {
     tokenlist = Tokenize(tokenizefile + std::to_string(i) + ".c");
     Parser CST(tokenlist);
     CST.buildCST();
-    cout<<"CST build successfully"<<endl;
+    cout<<"CST built successfully"<<endl;
     CST.tree.breadthFirstTraversal();
 
     return 0;
