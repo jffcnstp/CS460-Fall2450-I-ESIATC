@@ -111,20 +111,15 @@ public:
 
     Token& nextToken() {
         current++;
-        return tokens[current];
+        if(current<tokens.size())
+            return tokens[current];
+        else
+            return tokens[current-1];
     }
 
     void error(const std::string& message) {
         std::cerr << "CST Error: " << message << " at line: " << tokens[current].line << std::endl;
         exit(EXIT_FAILURE); // Stop execution on error
-    }
-
-    void advance() {
-        if (current < tokens.size() - 1) {
-            current++;
-        } else {
-            error("Unexpected end of input");
-        }
     }
 
     bool match(const string& type) {
@@ -162,6 +157,8 @@ public:
     }
 
     //THE MAIN FUNCTION FOR BUILDING THE CONCRETE SYNTAX TREE
+    //Input : Parser.tokens[] , local int bracecounter, local vector<int> bracelocation
+    //Output : populates Parser.tree
     void buildCST()
     {
         int bracecounter=0;
@@ -350,7 +347,8 @@ public:
             tokenused = nextToken();
 
             //invalid: last char of string is "\"
-            if (tokenused.getName().back() == '\\' || tokenused.getType() != "STRING")
+
+            if (tokenused.getName().back() == '\\' || tokenused.getType() != "STRING" )
                 Errorstatement("String", tokenused);
             else
                 tree.insertSibling(new Node(tokenused));
@@ -367,7 +365,8 @@ public:
             tokenused = nextToken();
 
             //invalid: last char of string is "\"
-            if (tokenused.getName().back() == '\\' || tokenused.getType() != "STRING")
+
+            if (tokenused.getName().back() == '\\' || tokenused.getType() != "STRING" )
                 Errorstatement("String", tokenused);
             else
                 tree.insertSibling(new Node(tokenused));
@@ -468,11 +467,18 @@ void parseBracket() {
             Errorstatement("Bracket", tokenused);
         }
 
-
         // Negative Integer error
         if(match("MINUS")) {
             Errorstatement("Bracket",tokenused);
         }
+
+        // Expecting ']'
+
+        if (match("R_BRACKET")) {
+            tree.insertChild(new Node(tokenused));
+            tokenused = nextToken();
+        }
+
 //        //TODO: Uncomment this when parseNumerical() is implemented
 //        // Also make sure that we aren't going over tokens by removing "tokenused = nextToken();"
 //        // Numerical Expression case
@@ -484,24 +490,6 @@ void parseBracket() {
 //            Errorstatement("Bracket",tokenused);
 //        }
 
-
-
-        // Everything else
-
-        if (!match("L_BRACKET") || !match("R_BRACKET")) {
-            tree.insertSibling(new Node(tokenused));
-            tokenused = nextToken();
-        }
-        else {
-            Errorstatement("Bracket",tokenused);
-        }
-
-        // Expecting ']'
-
-        if (match("R_BRACKET")) {
-            tree.insertChild(new Node(tokenused));
-            tokenused = nextToken();
-        }
             // Missing ']'
         else {
             Errorstatement("Bracket", tokenused);
@@ -521,38 +509,21 @@ void parseBracket() {
         if (match("L_BRACE")) {
             braceCounter++; // increment
             braceLocation.push_back(tokenused.getLine()); // Push to vector
-            tree.insertSibling(new Node(tokenused));
-            tokenused = nextToken();
-        }
-        else {
-            Errorstatement("Brace", tokenused);
-        }
-
-        // Everything else
-        if(!match("L_BRACE") || !match("R_BRACE")) {
-            tree.insertSibling(new Node(tokenused));
-            tokenused = nextToken();
-        }
-        else {
-            Errorstatement("Brace", tokenused);
-        }
-
-        // Expecting '}'
-        if (match("R_BRACE")) {
-            braceCounter--; // decrement
-            braceLocation.push_back(tokenused.getLine()); // Push to vector
             tree.insertChild(new Node(tokenused));
             tokenused = nextToken();
         }
-            // Missing '}'
+        // Expecting '}'
+       else if (match("R_BRACE")) {
+            braceCounter--; // decrement
+            braceLocation.pop_back(); // Push to vector
+            tree.insertChild(new Node(tokenused));
+            tokenused = nextToken();
+        }
+       // Missing '}'
         else {
             Errorstatement("Brace", tokenused);
         }
-        
-        // Checks to see if braces are being used properly
-        if (braceCounter % 2 != 0) {
-            Errorstatement("Brace", tokenused);
-        }
+
         nextToken();
     }
 
@@ -561,18 +532,11 @@ void parseBracket() {
     // Individual function soley designed for handling semicolons
     void parseSemicolon() {
         // Init token
-        Token tokenused = peek();
-
-        if (tokenused.getType() == ";" && match("SEMICOLON")) {
-            tree.insertChild(new Node(tokenused));
-            tokenused = nextToken();
-        }
-        else {
-            Errorstatement("Semicolon", tokenused);
-        }
-        nextToken();
-
+            tree.insertChild(new Node(peek()));
+            nextToken();
     }
+
+
 
     void Errorstatement(string fromwhere,Token tokenused)
     {
@@ -580,40 +544,6 @@ void parseBracket() {
         exit(-1);
     }
 
-
-    bool isDeclarationStatement() {
-        // A declaration begins with a type (int, float, etc.)
-        return match("int") || match("float") || match("bool") || match("char") || match("string");
-    }
-
-    bool isAssignmentStatement() {
-        // An assignment statement starts with an identifier, followed by an assignment operator
-        int savedPos = current;  // Save the current position
-        if (match("IDENTIFIER")) {
-            if (match("ASSIGNMENT_OPERATOR")) {
-                current = savedPos;  // Reset position after lookahead
-                return true;
-            }
-        }
-        current = savedPos;  // Reset position if no match
-        return false;
-    }
-
-
-    bool isSelectionStatement() {
-        // A selection statement starts with the 'if' keyword
-        return match("IF");
-    }
-
-
-    bool isIterationStatement() {
-        // An iteration statement starts with 'for' or 'while'
-        return match("FOR") || match("WHILE");
-    }
-
-    bool isEnd() {
-        return current >= tokens.size();
-    }
 };
 
 
