@@ -347,6 +347,7 @@ public:
             tokenused = nextToken();
 
             //invalid: last char of string is "\"
+
             if (tokenused.getName().back() == '\\' || tokenused.getType() != "STRING" )
                 Errorstatement("String", tokenused);
             else
@@ -364,6 +365,7 @@ public:
             tokenused = nextToken();
 
             //invalid: last char of string is "\"
+
             if (tokenused.getName().back() == '\\' || tokenused.getType() != "STRING" )
                 Errorstatement("String", tokenused);
             else
@@ -376,6 +378,75 @@ public:
                 Errorstatement("String", tokenused);
             tokenused = nextToken();
         }
+    }
+
+    //also for while statements?
+    void parseIfWhileStatement() {
+        Token tokenused = peek();
+        //case1: if, case2: while
+        if (tokenused.getType() == "If" && keywordcheck(tokenused.getName()) == Conditional) {
+            tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+
+            if (tokenused.getType() == "L_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
+                tree.insertSibling(new Node(tokenused));
+            else
+                Errorstatement("If", tokenused);
+            tokenused = nextToken();
+
+            //parseBoolean();
+
+            if (tokenused.getType() == "R_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
+                tree.insertChild(new Node(tokenused));
+            else
+                Errorstatement("If", tokenused);
+            tokenused = nextToken();
+        }
+
+        else if (tokenused.getType() == "While" && keywordcheck(tokenused.getName()) == Conditional) {
+            tree.insertSibling(new Node(tokenused));
+            tokenused = nextToken();
+
+            if (tokenused.getType() == "L_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
+                tree.insertSibling(new Node(tokenused));
+            else
+                Errorstatement("While", tokenused);
+            tokenused = nextToken();
+
+            //parseBoolean();
+
+            if (tokenused.getType() == "R_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
+                tree.insertChild(new Node(tokenused));
+            else
+                Errorstatement("While", tokenused);
+            tokenused = nextToken();
+        }
+
+        nextToken();
+    }
+
+    void parseElseStatement() {
+        Token tokenused = peek();
+        if (tokenused.getType() == "Else" && keywordcheck(tokenused.getName()) == Conditional)
+            tree.insertSibling(new Node(tokenused));
+        else
+            Errorstatement("Else", tokenused);
+        tokenused = nextToken();
+
+        if (tokenused.getType() == "L_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
+            tree.insertSibling(new Node(tokenused));
+        else
+            Errorstatement("Else", tokenused);
+        tokenused = nextToken();
+
+        //parseBoolean()
+
+        if (tokenused.getType() == "R_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
+            tree.insertChild(new Node(tokenused));
+        else
+            Errorstatement("Else", tokenused);
+        tokenused = nextToken();
+
         nextToken();
     }
 
