@@ -570,7 +570,7 @@ public:
     void parseForStatement() {
         Token tokenused = peek();
         if (tokenused.getType() == "FOR" && keywordcheck(tokenused.getName()) == Conditional)
-            tree.insertSibling(new Node(tokenused));
+            tree.insertChild(new Node(tokenused));
         else
             Errorstatement("For FOR", tokenused);
         tokenused = nextToken();
