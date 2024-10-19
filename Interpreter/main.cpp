@@ -465,36 +465,25 @@ void parseBracket() {
             nextToken();
     }
 
+
 // PA3: RDP - parseNumerical()
-// Handles numerical expressions
-void parseNumerical() {
+// Handles numerical expressions, recursively gathers all tokens until an invalid token appears
+    void parseNumerical() {
         // init token
         Token tokenused = peek();
         
-        // Negative check
-        if (match("MINUS")) {
-            tree.insertSibling(new Node(tokenused));
-            tokenused = nextToken();
+        // Base case: next token is not an integer or an operation
+        // NOTE: be cautious with the last check, it might not be right.
+        if (!match("INTEGER") && (!match("PLUS") || !match("MINUS") ||
+            !match("DIVIDE") || !match("AESTERISK") || !match("MODULO") ||
+            !match("CARET")) && (match("IDENTIFIER") && keywordcheck(tokenused.getName()) ==0)) {
+            return;
         }
 
-        // Checks to see if it's a number, add to tree
-        if (match("INTEGER")) {
-            tree.insertSibling(new Node(tokenused));
-            tokenused = nextToken();
-        }
-
-        // Checks to see if there are expressions, this should cover all ops: + - / * %
-        if (match("PLUS") || match("MINUS") || match("DIVIDE") 
-        || match("AESTERISK") || match("MODULO")) {
-            tree.insertSibling((new Node(tokenused)));
-            tokenused = nextToken();
-        }
-
-        // invalid syntax
-        else {
-            Errorstatement("Numerical", tokenused);
-        }
-        nextToken();
+        // Recursive call: 
+        tree.insertChild(new Node(tokenused));
+        nextToken(); // unsure if this might screw it up
+        parseNumerical();
     }
 
 
