@@ -1,15 +1,15 @@
-                                                     
-                                                     
-                                                     
+// ***************************************************
+// * CS460: Programming Assignment 4: Test Program 2 *
+// ***************************************************
 
 
 
-                                                                                     
-                                                                                     
-                                                                                     
-                                                                                     
-                                                                                     
-function int hexdigit2int (char int)                                                              
+// ***********************************************************************************
+// * Hex digit converts a single character into its non-negative integer equivalent. *
+// *                                                                                 *
+// * Hex digit returns -1 upon error                                                 *
+// ***********************************************************************************
+function int hexdigit2int (char hex_digit)
 {
   int i, digit;
 

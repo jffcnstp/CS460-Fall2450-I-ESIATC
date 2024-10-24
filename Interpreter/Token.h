@@ -222,7 +222,7 @@ vector<Token> Tokenize(const string& fileName) {
                     tokenlist.emplace_back("BOOLEAN_NOT_EQUAL","!=",linenumber);
                 else
                 {
-                    tokenlist.emplace_back("BOOLEAN_NOT",",",linenumber);
+                    tokenlist.emplace_back("BOOLEAN_NOT","!",linenumber);
                     inputFile.unget();
                 }
                 break;

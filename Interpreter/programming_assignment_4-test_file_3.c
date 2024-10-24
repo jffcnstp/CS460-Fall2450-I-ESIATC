@@ -1,5 +1,5 @@
 /***************************************************
- * CS460: Programming Assignment 3: Test Program 4 *
+ * CS460: Programming Assignment 4: Test Program 3 *
  ***************************************************/
 
 char announcement[2048];
@@ -11,7 +11,7 @@ procedure main (void)
 
   name = 'Robert\x0';
   announcement = "You've got mail!\x0";
-  display_announcement (name[0]);
+  display_announcement (name);
 }
 
 

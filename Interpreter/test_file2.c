@@ -4,73 +4,58 @@
 
 
 
-                                                                                             
-                                                                                             
-                                                                                             
-                                                                                             
-                                                                                                             
-                                                                                             
-                                                                                             
-                                                                                             
-procedure fizzbuzz (int counter)
+                                                                                     
+                                                                                     
+                                                                                     
+                                                                                     
+                                                                                     
+function int hexdigit2int (char hex_digit)
 {
-  int state;
+  int i, digit;
 
-  state = 0;
-  if ((counter % 3) == 0)
+  digit = -1;
+  if ((hex_digit >= '0') && (hex_digit <= '9'))
   {
-    state = 1;
-  }
-  if ((counter % 5) == 0)
-  {
-    state = state * 2 + 2;
-  }
-  if (state == 1)
-  {
-    printf ("Fizz");
+    digit = hex_digit - '0';
   }
   else
   {
-    if (state == 2)
+    if ((hex_digit >= 'a') && (hex_digit <= 'f'))
     {
-      printf ("Buzz");
+      digit = hex_digit - 'a' + 10;
     }
     else
     {
-      if (state == 4)
+      if ((hex_digit >= 'A') && (hex_digit <= 'F'))
       {
-        printf ("Fizzbuzz");
-      }
-      else
-      {
-        printf ("%d", counter);
+        digit = hex_digit - 'A' + 10; 
       }
     }
   }
+  return digit;
 }
-
-
 
 
 
 procedure main (void)
 {
-  int counter;
+  char hexnum[9];
+  int i, digit, number; 
 
-  counter = 1;
-  while (counter <= 100)
+  number = 0;
+  hexnum = "feed\x0";
+  digit = 0;
+  for (i = 0; (i < 4) && (digit > -1); i = i + 1)
   {
-    fizzbuzz (counter);
-    counter = counter + 1;
-    if (counter <= 100)
+    digit = hexdigit2int (hexnum[i]);
+    if (digit > -1)
     {
-      printf (", ");
-    }
-    else
-    {
-      printf ("\n");
+      number = number * 16 + digit;
     }
   }
+  if (digit > -1)
+  {
+    printf ("Hex: 0x%s is %d decimal\n", hexnum, number);
+  }
 }
-
 

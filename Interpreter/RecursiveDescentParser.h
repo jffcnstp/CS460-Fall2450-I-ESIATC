@@ -75,8 +75,10 @@ public:
         while(traversal)
         {
             cout<<traversal->data.getName()<<" ";
-            if(traversal->rightSibling)
-                traversal=traversal->rightSibling;
+            if(traversal->rightSibling) {
+                cout<<"-> ";
+                traversal = traversal->rightSibling;
+            }
             else if(traversal->leftChild) {
                 cout<<endl;
                 traversal = traversal->leftChild;
@@ -84,6 +86,7 @@ public:
             else
                 break;
         }
+        cout<<endl;
     }
 };
 
@@ -200,8 +203,7 @@ public:
             //procedure declaration
             if(match("SEMICOLON"))
             {parseSemicolon();}
-
-            if(match("L_BRACE") || match("R_BRACE"))
+            else if(match("L_BRACE") || match("R_BRACE"))
             {parseBrace(bracecounter,bracelocation);}
 
         }
@@ -219,6 +221,7 @@ public:
     // parses tokens expecting the syntax for procedure when the token found is PROCEDURE
     void parseProcedure()
     {
+        bool multipleparameters=true;
         tree.insertChild(new Node(peek()));
         nextToken();
 
@@ -238,7 +241,18 @@ public:
         else
             Errorstatement("Procedure L_PAREN",peek());
 
-        parseFunctionDeclarationParameter();
+        while(multipleparameters==true)
+        {
+            multipleparameters = false;
+            parseFunctionDeclarationParameter();
+
+            if(match("COMMA"))
+            {
+                tree.insertSibling((new Node(peek())));
+                nextToken();
+                multipleparameters = true;
+            }
+        }
 
         if(match("R_PAREN"))
         {
@@ -453,10 +467,9 @@ public:
             else
                 Errorstatement("Return R_PAREN",peek());
         }
-        else if(match("IDENTIFIER") && keywordcheck(peek().getName())==Identifier)//EDIT EMERGENCY might need to add parse brackets
+        else
         {
-            tree.insertSibling(new Node(peek()));
-            nextToken();
+            parseExpression();
         }
         if(!match("SEMICOLON"))
             Errorstatement("Return semicolon",peek());
