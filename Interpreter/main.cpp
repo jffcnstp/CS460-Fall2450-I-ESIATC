@@ -5,6 +5,7 @@
 #include "CommentRemove.h"
 #include "Token.h"
 #include "RecursiveDescentParser.h"
+#include "SymbolTable.h"
 
 using namespace std;
 
