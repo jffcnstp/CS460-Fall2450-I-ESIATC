@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include "CommentRemove.h"
 #include "Token.h"
 #include "RecursiveDescentParser.h"
