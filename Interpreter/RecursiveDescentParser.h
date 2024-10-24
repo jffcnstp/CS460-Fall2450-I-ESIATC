@@ -66,6 +66,29 @@ public:
         return currentNode;
     }
 
+    void resetCurrentNode(){
+        currentNode=root;
+    }
+
+    void nextNode(){
+        if(currentNode->rightSibling)
+        {
+            currentNode=currentNode->rightSibling;
+        }
+        if(currentNode->leftChild)
+        {
+            currentNode=currentNode->leftChild;
+        }
+    }
+
+    bool EOT(){
+        if(currentNode->rightSibling)
+            return false;
+        if(currentNode->leftChild)
+            return false;
+        return true;
+    }
+
 
     // Breadth-First Traversal
     void breadthFirstTraversal() {

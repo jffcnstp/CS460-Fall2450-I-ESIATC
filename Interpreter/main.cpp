@@ -17,7 +17,7 @@ int main() {
     string tokenizefile="test_file";
     Parser *CST;
 
-    for(int i=1; i <11; i++) {
+    for(int i=1; i <8; i++) {
         ignoreComments(fileName + std::to_string(i) + ".c", tokenizefile + std::to_string(i) + ".c");
         tokenlist = Tokenize(tokenizefile + std::to_string(i) + ".c");
         CST= new Parser(tokenlist);

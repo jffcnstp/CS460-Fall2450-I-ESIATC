@@ -28,5 +28,16 @@ struct Symbol {
             : name(name), type(type), datatype(datatype), isArray(isArray), arraySize(arraySize), scope(scope), next(nullptr) {}
 };
 
+class SymbolTable{
+    Symbol* Root;
+    Symbol* Current;
+
+public:
+
+    void BuildTable(LCRSTree CST)
+    {
+        
+    }
+};
 
 #endif //CS460_SYMBOLTABLE_H
