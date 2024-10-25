@@ -96,6 +96,33 @@ public:
                 CST.nextChild(); //skips over the entire Sibling chain into the next Child
         }
     }
+
+    //checks if an identifier exists within the symbol table
+    bool existsInTable(int currentScope, int scopeNum, const string& type, LCRSTree CST) {
+        Symbol* currentSymbol = Root;
+        Node* currentNode = CST.getCurrentNode();
+
+        if (type == "IDENTIFIER" || type == "PROCEDURE") {
+            while (currentSymbol->next != nullptr) {
+                if (currentNode->data.getName() == currentSymbol->name /*&&
+                    scope stuff goes here*/) {
+                    return true;
+                }
+                currentSymbol = currentSymbol->next;
+            }
+        }
+        else { //type == function
+            currentNode = currentNode->rightSibling->rightSibling;
+            while (currentSymbol->next != nullptr) {
+                if (currentNode->data.getName() == currentSymbol->name /*&&
+                        (scope stuff goes here*/) {
+                    return true;
+                }
+                currentSymbol = currentSymbol->next;
+            }
+        }
+        return false;
+    }
 };
 
 #endif //CS460_SYMBOLTABLE_H
