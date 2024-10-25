@@ -101,21 +101,20 @@ public:
     bool existsInTable(int currentScope, int scopeNum, const string& type, LCRSTree CST) {
         Symbol* currentSymbol = Root;
         Node* currentNode = CST.getCurrentNode();
+        currentNode = currentNode->rightSibling;
 
         if (type == "IDENTIFIER" || type == "PROCEDURE") {
             while (currentSymbol->next != nullptr) {
-                if (currentNode->data.getName() == currentSymbol->name /*&&
-                    scope stuff goes here*/) {
+                if (currentNode->data.getName() == currentSymbol->name /*scope stuff goes here*/) {
                     return true;
                 }
                 currentSymbol = currentSymbol->next;
             }
         }
         else { //type == function
-            currentNode = currentNode->rightSibling->rightSibling;
+            currentNode = currentNode->rightSibling;
             while (currentSymbol->next != nullptr) {
-                if (currentNode->data.getName() == currentSymbol->name /*&&
-                        (scope stuff goes here*/) {
+                if (currentNode->data.getName() == currentSymbol->name /*scope stuff goes here*/) {
                     return true;
                 }
                 currentSymbol = currentSymbol->next;
