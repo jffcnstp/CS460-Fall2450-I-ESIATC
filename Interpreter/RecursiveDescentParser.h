@@ -69,6 +69,18 @@ public:
     void resetCurrentNode(){
         currentNode=root;
     }
+    bool nextChild(){
+        while(currentNode->rightSibling)
+        {
+            currentNode=currentNode->rightSibling;
+        }
+        if(currentNode->leftChild)
+        {
+            currentNode=currentNode->leftChild;
+            return true;
+        }
+        return false;
+    }
 
     void nextNode(){
         if(currentNode->rightSibling)
@@ -141,7 +153,10 @@ public:
         }
         return false;
     }
-
+    LCRSTree getCST()
+    {
+        return tree;
+    }
 
     //PURPOSE: checks the parameter string  for what type of identifier it is and returns an int
     //INPUT:  string name (ideally the string passed is from Token.name

@@ -30,13 +30,71 @@ struct Symbol {
 
 class SymbolTable{
     Symbol* Root;
-    Symbol* Current;
+    Symbol* Tail;
+    Symbol* Traversal;
 
 public:
+    SymbolTable(){Root= nullptr;Tail= nullptr;Traversal= nullptr;}
 
+    void addSymbol(Symbol *entry)
+    {
+        if(Root== nullptr)
+        {
+            Root=entry;
+            Tail=entry;
+            Traversal=Root;
+            return;
+        }
+        Tail->next=entry;
+        Tail=entry;
+
+
+    }
+
+    // DFA FOR BUILDING THE SYMBOL TABLE
+    // USES LOCAL VARIABLES currentscope and scopenum to track current scope (currentscope tracks how deep we are in a function scopenum tracks which function we are in)
+    //
     void BuildTable(LCRSTree CST)
     {
-        
+        int currentscope =0;//not finalized need to think about whether this 2 int system is good enough
+        int scopenum=0;
+        while(!CST.EOT())
+        {
+            Node* current=CST.getCurrentNode();
+            if(current->data.getType()=="FUNCTION")
+            {
+                scopenum+=1;
+                //addFunction( scopenum)
+            }
+            else if(current->data.getType()=="PROCEDURE")
+            {
+                scopenum+=1;
+                //addProcedure(scopenum)
+            }
+            else if(current->data.getType()=="IDENTIFIER")
+            {
+                for(auto &keyword : typekeyword)
+                {
+                    if(keyword == current->data.getName()) {
+                        //addVariable(scope);
+                        break;
+                    }
+                }
+            }
+            else if(current->data.getType()=="L_BRACE" )
+            {
+                currentscope+=1;
+                CST.nextNode();
+            }
+            else if(current->data.getType()=="R_BRACE")
+            {
+
+                currentscope-=1;
+                CST.nextNode();
+            }
+            else
+                CST.nextChild(); //skips over the entire Sibling chain into the next Child
+        }
     }
 };
 
