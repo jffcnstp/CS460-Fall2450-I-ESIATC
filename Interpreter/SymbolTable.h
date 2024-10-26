@@ -127,6 +127,17 @@ public:
         }
     }
 
+    // TODO: Finish me! I'm currently a skeleton!
+    // PA4: errorStatement()
+    // Prints out and error statement to console and specifies what scope and type the node was.
+    // Parameters copy existsInTable() function for now. fromwhere specifies what function it is from i.e. 
+    // "populateDeclaredFunction". 
+    void errorStatement(string fromwhere, int currentScope, int scopeNum, const string& type, LCRSTree CST) {
+        cout << fromwhere << " error with either scope or already existing variable on symbol table." << " Scope was: " 
+        << currentScope << " variable was: " << type << endl;
+        exit(-1);
+    }
+
     //checks if an identifier exists within the symbol table
     bool existsInTable(int currentScope, int scopeNum, const string& type, LCRSTree CST) {
         Symbol* currentSymbol = Root;
