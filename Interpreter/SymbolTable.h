@@ -97,6 +97,36 @@ public:
         }
     }
 
+    // TODO: Finish writing me! I'm just a skeleton!
+    // PA4: populateDeclaredFunction();
+    // populates a node of the Symbol table that assumes the identifier we’ve hit is a Function.
+    // NOTE: Requires the populateParameter() function when parenthesis is hit in the symbol tree.
+    // Parameters: All of these parameters are for the existsInTable() function atm that checks if the current
+    // node is the symbol table already.
+    void populateDeclaredFunction(int currentScope, int scopeNum, const string& type, LCRSTree CST) {
+        // Grab current node
+        Node* current=CST.getCurrentNode();
+
+        // Check to see if the current node is a function
+        if(current->data.getType()=="FUNCTION")
+        {
+
+            // Do another check, in here to verify this isn't already in the symbol table
+            if (existsInTable(currentScope,scopeNum,type,CST)) {
+                // Call the error statement function for this part.
+            }
+            // Do thing
+            else {
+                // Do something most-likely with populateParameter() function.
+            }
+        }
+
+        // Otherwise...
+        else {
+            // Call the errorStatement() function for this part
+        }
+    }
+
     //checks if an identifier exists within the symbol table
     bool existsInTable(int currentScope, int scopeNum, const string& type, LCRSTree CST) {
         Symbol* currentSymbol = Root;
