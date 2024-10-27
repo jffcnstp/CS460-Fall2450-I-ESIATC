@@ -52,12 +52,11 @@ public:
     }
 
     // DFA FOR BUILDING THE SYMBOL TABLE
-    // USES LOCAL VARIABLES currentscope and scopenum to track current scope (currentscope tracks how deep we are in a function scopenum tracks which function we are in)
-    //
+    // USES LOCAL VARIABLES currentscope,bracecounter, and scopenum to track current scope (currentscope tracks how deep we are in a function scopenum tracks how many functions/procedures there are)
+    //please consider 0 to be global scope when making your functions
     void BuildTable(LCRSTree CST)
     {
-        int currentscope =0;//not finalized need to think about whether this 2 int system is good enough
-        int scopenum=0;
+        int currentscope =0,scopenum=0,bracecounter=0;//not finalized need to think about whether this 2 int system is good enough
         while(!CST.EOT())
         {
             Node* current=CST.getCurrentNode();
@@ -76,20 +75,23 @@ public:
                 for(auto &keyword : typekeyword)
                 {
                     if(keyword == current->data.getName()) {
-                        //addVariable(scope);
+                        //addVariable(currentscope);
                         break;
                     }
                 }
             }
             else if(current->data.getType()=="L_BRACE" )
             {
-                currentscope+=1;
+                bracecounter+=1;
+                currentscope=scopenum;
                 CST.nextNode();
             }
             else if(current->data.getType()=="R_BRACE")
             {
+                bracecounter -=1;
+                if(bracecounter == 0)
+                    currentscope=0;
 
-                currentscope-=1;
                 CST.nextNode();
             }
             else
@@ -146,7 +148,7 @@ public:
 
         if (type == "IDENTIFIER" || type == "PROCEDURE") {
             while (currentSymbol->next != nullptr) {
-                if (currentNode->data.getName() == currentSymbol->name /*scope stuff goes here*/) {
+                if (currentNode->data.getName() == currentSymbol->name &&(currentSymbol->scope == 0 || currentSymbol->scope == currentScope) /*scope stuff goes here*/) {
                     return true;
                 }
                 currentSymbol = currentSymbol->next;
@@ -155,7 +157,7 @@ public:
         else { //type == function
             currentNode = currentNode->rightSibling;
             while (currentSymbol->next != nullptr) {
-                if (currentNode->data.getName() == currentSymbol->name /*scope stuff goes here*/) {
+                if (currentNode->data.getName() == currentSymbol->name  && (currentSymbol->scope == 0 || currentSymbol->scope == currentScope)) { //if variables have the same name but are in different functions this shouldn't trigger
                     return true;
                 }
                 currentSymbol = currentSymbol->next;
