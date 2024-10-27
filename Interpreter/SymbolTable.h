@@ -114,7 +114,7 @@ public:
         {
 
             // Do another check, in here to verify this isn't already in the symbol table
-            if (existsInTable(currentScope,scopeNum,type,CST)) {
+            if (true) {
                 // Call the error statement function for this part.
             }
             // Do thing
@@ -183,27 +183,26 @@ public:
     }
 
     //checks if an identifier exists within the symbol table
-    bool existsInTable(int currentScope, const string& type, LCRSTree &CST) {
+    //assumes no duplicate function names, so this only works on variables
+    //call this when the current CST node is the identifier's name
+    bool existsInTable(int currentScope, const string& name) {
         Symbol* currentSymbol = Root;
-        Node* currentNode = CST.getCurrentNode();
-        currentNode = currentNode->rightSibling;
+        while (currentSymbol->next != nullptr) { //loop through the entire Symbol Table
 
-        if (type == "IDENTIFIER" || type == "PROCEDURE") {
-            while (currentSymbol->next != nullptr) {
-                if (currentNode->data.getName() == currentSymbol->name &&(currentSymbol->scope == 0 || currentSymbol->scope == currentScope) /*scope stuff goes here*/) {
-                    return true;
+            while (!currentSymbol->parameterNames.empty()) { //checking current CST node against current Symbol's parameters, if any
+                for (const auto& i : currentSymbol->parameterNames) {
+                    if (name == i && (currentSymbol->scope == 0 || currentSymbol->scope == currentScope)) {
+                        return true;
+                    }
                 }
-                currentSymbol = currentSymbol->next;
             }
-        }
-        else { //type == function
-            currentNode = currentNode->rightSibling;
-            while (currentSymbol->next != nullptr) {
-                if (currentNode->data.getName() == currentSymbol->name  && (currentSymbol->scope == 0 || currentSymbol->scope == currentScope)) { //if variables have the same name but are in different functions this shouldn't trigger
-                    return true;
-                }
-                currentSymbol = currentSymbol->next;
+
+            //name matches an identifier that exists in global or same scope
+            if (name == currentSymbol->name && (currentSymbol->scope == 0 || currentSymbol->scope == currentScope)) {
+                return true;
             }
+
+            currentSymbol = currentSymbol->next;
         }
         return false;
     }
