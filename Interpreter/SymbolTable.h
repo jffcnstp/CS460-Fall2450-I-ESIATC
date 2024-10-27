@@ -63,12 +63,12 @@ public:
             if(current->data.getType()=="FUNCTION")
             {
                 scopenum+=1;
-                //addFunction( scopenum)
+                //addFunction( currentscope)
             }
             else if(current->data.getType()=="PROCEDURE")
             {
                 scopenum+=1;
-                //addProcedure(scopenum)
+                //addProcedure(currentscope)
             }
             else if(current->data.getType()=="IDENTIFIER")
             {
@@ -105,7 +105,7 @@ public:
     // NOTE: Requires the populateParameter() function when parenthesis is hit in the symbol tree.
     // Parameters: All of these parameters are for the existsInTable() function atm that checks if the current
     // node is the symbol table already.
-    void populateDeclaredFunction(int currentScope, int scopeNum, const string& type, LCRSTree CST) {
+    void populateDeclaredFunction(int currentScope, int scopeNum, const string& type, LCRSTree &CST) {
         // Grab current node
         Node* current=CST.getCurrentNode();
 
@@ -129,19 +129,61 @@ public:
         }
     }
 
+    void populateDeclaredvariable(int currentscope,LCRSTree &CST)
+    {
+
+        bool multiplevariables=true;
+        string varname;
+        string vartype=CST.getCurrentNode()->data.getName();
+        CST.nextNode();
+        while(multiplevariables)
+        {
+            multiplevariables=false;
+            varname=CST.getCurrentNode()->data.getName();
+            //if(existsInTable(varname,currentscope))
+            //      errorStatement("DeclaredVariable alreadyexists", currentscope,CST.getcurrentNode());
+            CST.nextNode();// move to the L_BRACKET OR COMMA OR SEMICOLON NODE
+            if(CST.getCurrentNode()->data.getType()=="L_BRACKET")
+            {
+                CST.nextNode();     //moves to the arraysize node
+                addSymbol(new Symbol(varname,"datatype",vartype,true,stoi(CST.getCurrentNode()->data.getName()),currentscope));
+                CST.nextNode();     //move to R_BRACKET
+                CST.nextNode();     //move to COMMA OR SEMICOLON NODE
+            }
+            else
+            {
+                addSymbol(new Symbol(varname,"datatype",vartype,false,0,currentscope));
+            }
+            if(CST.getCurrentNode()->data.getType()=="COMMA")
+            {
+                multiplevariables=true;
+                CST.nextNode();
+            }
+        }
+        if(CST.getCurrentNode()->data.getType()=="SEMICOLON")
+        {
+            CST.nextNode();
+        }
+        else
+        {
+            cout<<"THERE IS SUPPOSED TO BE A SEMICOLON HERE.  INSTEAD IT'S A "<<CST.getCurrentNode()->data.getName() <<" TOKEN ON LINE: "<<CST.getCurrentNode()->data.getLine();
+            exit(-2);
+        }
+    }
+
     // TODO: Finish me! I'm currently a skeleton!
     // PA4: errorStatement()
     // Prints out and error statement to console and specifies what scope and type the node was.
     // Parameters copy existsInTable() function for now. fromwhere specifies what function it is from i.e. 
     // "populateDeclaredFunction". 
-    void errorStatement(string fromwhere, int currentScope, int scopeNum, const string& type, LCRSTree CST) {
-        cout << fromwhere << " error with either scope or already existing variable on symbol table." << " Scope was: " 
-        << currentScope << " variable was: " << type << endl;
+    void errorStatement(string fromwhere, int currentScope, Node* node) {
+        cout << fromwhere << " error with " << " Scope was: "
+        << currentScope << " variable was: " << node->data.getType()<<" "<<node->data.getName()<<" on line "<<node->data.getLine() << endl;
         exit(-1);
     }
 
     //checks if an identifier exists within the symbol table
-    bool existsInTable(int currentScope, int scopeNum, const string& type, LCRSTree CST) {
+    bool existsInTable(int currentScope, const string& type, LCRSTree &CST) {
         Symbol* currentSymbol = Root;
         Node* currentNode = CST.getCurrentNode();
         currentNode = currentNode->rightSibling;
