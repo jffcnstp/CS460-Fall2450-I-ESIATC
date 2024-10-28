@@ -32,9 +32,9 @@ class SymbolTable{
     Symbol* Root;
     Symbol* Tail;
     Symbol* Traversal;
-
+    LCRSTree CST;
 public:
-    SymbolTable(){Root= nullptr;Tail= nullptr;Traversal= nullptr;}
+    SymbolTable(LCRSTree inputtree){Root= nullptr;Tail= nullptr;Traversal= nullptr; CST=inputtree;}
 
     void addSymbol(Symbol *entry)
     {
@@ -50,11 +50,48 @@ public:
 
 
     }
+    void printSymbolTable()
+    {
+        Traversal=Root;
+        while(Traversal->next !=nullptr)
+        {
+            cout<<"IDENTIFIER_NAME: "<<Traversal->name<<endl
+            << "IDENTIFIER_TYPE: "<<Traversal->type<<endl
+            << "DATATYPE: "<<Traversal->datatype<<endl
+            <<"DATATYPE_IS_ARRAY: ";
+            if(Traversal->isArray)
+               {cout<<"yes";}
+            else
+               {cout<<"no";}
+            cout<<endl
+            <<"DATATYPE_ARRAY_SIZE: "<<Traversal->arraySize<<endl
+            <<"SCOPE: "<<Traversal->scope<<endl<<endl;
+
+            if(!Traversal->parameterNames.empty())
+            {
+                for(int i=0;i < Traversal->parameterNames.size(); i++) {
+                    cout << "Parameter for: "<<Traversal->name<<endl
+                    <<"IDENTIFIER_NAME: "<<Traversal->parameterNames[i]<<endl
+                    << "DATATYPE: "<<Traversal->parameterDatatypes[i]<<endl
+                    <<"DATATYPE_IS_ARRAY: ";
+                    if(Traversal->isParameterArray[i])
+                    {cout<<"yes";}
+                    else
+                    {cout<<"no";}
+                    cout<<endl
+                    <<"DATATYPE_ARRAY_SIZE: "<<Traversal->parametersArraySizes[i]<<endl
+                    <<"SCOPE: "<<Traversal->scope<<endl<<endl;
+                }
+            }
+
+            Traversal=Traversal->next;
+        }
+    }
 
     // DFA FOR BUILDING THE SYMBOL TABLE
     // USES LOCAL VARIABLES currentscope,bracecounter, and scopenum to track current scope (currentscope tracks how deep we are in a function scopenum tracks how many functions/procedures there are)
     //please consider 0 to be global scope when making your functions
-    void BuildTable(LCRSTree CST)
+    void BuildTable()
     {
         int currentscope =0,scopenum=0,bracecounter=0;//not finalized need to think about whether this 2 int system is good enough
         while(!CST.EOT())
@@ -63,12 +100,12 @@ public:
             if(current->data.getType()=="FUNCTION")
             {
                 scopenum+=1;
-                //addFunction( currentscope)
+                //addFunction(scopenum)
             }
             else if(current->data.getType()=="PROCEDURE")
             {
                 scopenum+=1;
-                //addProcedure(currentscope)
+                //addProcedure(scopenum)
             }
             else if(current->data.getType()=="IDENTIFIER")
             {
@@ -169,7 +206,7 @@ public:
         }
     }
 
-    void populateDeclaredvariable(int currentscope,LCRSTree &CST)
+    void populateDeclaredvariable(int currentscope)
     {
 
         bool multiplevariables=true;
