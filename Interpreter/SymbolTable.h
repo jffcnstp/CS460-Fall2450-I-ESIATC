@@ -174,7 +174,7 @@ public:
             if(CST.getCurrentNode()->data.getType()=="L_PAREN") {
                 // FIXME: unsure if contents of Symbol is correct.
                 // This should be adding the function declaration itself to the table, I think.
-                addSymbol(new Symbol(varname,"datatype",vartype,true,stoi(CST.getCurrentNode()->data.getName()),currentscope))
+                addSymbol(new Symbol(varname,"datatype",vartype,true,stoi(CST.getCurrentNode()->data.getName()),currentscope));
                 CST.nextNode(); // move to either end of function declaration or comma.
             }
 
@@ -290,6 +290,49 @@ public:
 
         return false;
     }
+
+
+    void populateDeclaredProcedure(SymbolTable &table, LCRSTree &CST, int currentScope, int scopeNum) {
+        Node* currentNode = CST.getCurrentNode();
+
+        // Verify that current node is indeed an identifier for a procedure
+        if (currentNode->data.getType() != "PROCEDURE") {
+            error("Expected PROCEDURE type but found: " + currentNode->data.getType());
+            return;
+        }
+
+        // Extract procedure name and data type
+        string procedureName = currentNode->data.getName();
+        string procedureType = "PROCEDURE"; // To keep type consistent
+        string procedureDataType = "void";  // Default to void for procedures
+
+        // Create a new Symbol entry for the procedure with basic details
+        Symbol* newProcedure = new Symbol(procedureName, procedureType, procedureDataType, false, 0, currentScope);
+
+        // Move to the next node to check for parameter list (i.e., an open parenthesis)
+        CST.nextNode();
+        currentNode = CST.getCurrentNode();
+        if (currentNode->data.getType() != "L_PAREN") {
+            error("Expected '(' after procedure name for parameter list.");
+            delete newProcedure; // Clean up in case of error
+            return;
+        }
+
+        // Populate parameters by passing the symbol to PopulateDeclaredFunctionParameter
+        CST.nextNode(); // Move inside the parentheses
+        PopulateDeclaredFunctionParameter(newProcedure, CST);
+
+        // Add the newly populated procedure entry to the symbol table
+        table.addSymbol(newProcedure);
+    }
+
+    void error(const std::string& message) const {
+        std::cerr << "Symbol Table Error: " << message << std::endl;
+        
+        // Possible additions could include logging to a file, halting certain operations, etc.
+    }
+
+
 };
 
 #endif //CS460_SYMBOLTABLE_H
