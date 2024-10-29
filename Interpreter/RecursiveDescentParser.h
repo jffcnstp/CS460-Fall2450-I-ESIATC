@@ -86,10 +86,12 @@ public:
         if(currentNode->rightSibling)
         {
             currentNode=currentNode->rightSibling;
+            return;
         }
         if(currentNode->leftChild)
         {
             currentNode=currentNode->leftChild;
+            return;
         }
     }
 
@@ -131,9 +133,9 @@ class Parser {
 public:
     std::vector<Token> tokens;
     int current = 0;
-    LCRSTree tree;
+    LCRSTree *tree;
 
-    Parser(const std::vector<Token>& tokenList) : tokens(tokenList), current(0), tree() {}
+    Parser(const std::vector<Token>& tokenList) : tokens(tokenList), current(0), tree(new LCRSTree()) {}
 
     Token& peek() {
         return tokens[current];
@@ -153,7 +155,7 @@ public:
         }
         return false;
     }
-    LCRSTree getCST()
+    LCRSTree* getCST()
     {
         return tree;
     }
@@ -260,12 +262,12 @@ public:
     void parseProcedure()
     {
         bool multipleparameters=true;
-        tree.insertChild(new Node(peek()));
+        tree->insertChild(new Node(peek()));
         nextToken();
 
         if(match("IDENTIFIER") && keywordcheck(peek().getName())==Identifier)
         {
-            tree.insertSibling(new Node(peek()));
+            tree->insertSibling(new Node(peek()));
             nextToken();
         }
         else
@@ -273,7 +275,7 @@ public:
 
         if(match("L_PAREN"))
         {
-            tree.insertSibling(new Node(peek()));
+            tree->insertSibling(new Node(peek()));
             nextToken();
         }
         else
@@ -286,7 +288,7 @@ public:
 
             if(match("COMMA"))
             {
-                tree.insertSibling((new Node(peek())));
+                tree->insertSibling((new Node(peek())));
                 nextToken();
                 multipleparameters = true;
             }
@@ -294,7 +296,7 @@ public:
 
         if(match("R_PAREN"))
         {
-            tree.insertSibling(new Node(peek()));
+            tree->insertSibling(new Node(peek()));
             nextToken();
         }
         else
@@ -311,24 +313,24 @@ public:
     {
 
         bool multipleparameters=true;
-        tree.insertChild(new Node(peek())); //add the function to the tree
+        tree->insertChild(new Node(peek())); //add the function to the tree
         nextToken();
 
         if(match("IDENTIFIER")  && keywordcheck(peek().getName())==Type)
-            tree.insertSibling(new Node(peek()));
+            tree->insertSibling(new Node(peek()));
         else
             Errorstatement("FunctionDeclaration Keyword",peek());
 
         nextToken();
 
         if(match("IDENTIFIER")  && keywordcheck(peek().getName())==Identifier)
-            tree.insertSibling(new Node(peek()));
+            tree->insertSibling(new Node(peek()));
         else
             Errorstatement("FunctionDeclaration Identifier",peek());
         nextToken();
 
         if(match("L_PAREN") )
-            tree.insertSibling(new Node(peek()));
+            tree->insertSibling(new Node(peek()));
         else
             Errorstatement("FunctionDeclaration LPAREN",peek());
         nextToken();
@@ -340,13 +342,13 @@ public:
 
             if(match("COMMA"))
             {
-                tree.insertSibling((new Node(peek())));
+                tree->insertSibling((new Node(peek())));
                 nextToken();
                 multipleparameters = true;
             }
         }
         if(match("R_PAREN"))
-            tree.insertSibling(new Node(peek()));
+            tree->insertSibling(new Node(peek()));
         else
             Errorstatement("FunctionDeclaration R_PAREN",peek());
 
@@ -359,7 +361,7 @@ public:
 
         if(match("IDENTIFIER") && keywordcheck(tokenused.getName())==Type)
         {
-            tree.insertSibling(new Node(tokenused));
+            tree->insertSibling(new Node(tokenused));
             if(peek().getName()=="void")
             {
                 nextToken();
@@ -372,7 +374,7 @@ public:
             Errorstatement("FunctionDeclarationParameter Keyword",tokenused);
 
         if (match("IDENTIFIER") && keywordcheck(tokenused.getName()) == Identifier) {
-            tree.insertSibling(new Node(tokenused));
+            tree->insertSibling(new Node(tokenused));
             tokenused = nextToken();
         } else
             Errorstatement("FunctionDeclarationParameter Identifier", tokenused);
@@ -391,14 +393,14 @@ public:
     void parseVariableDeclaration()
     {
         bool loop=true;
-        tree.insertChild(new Node(peek()));
+        tree->insertChild(new Node(peek()));
         nextToken();
 
         while(loop) {
             loop = false;
 
             if (match("IDENTIFIER") && keywordcheck(peek().getName()) == Identifier) {
-                tree.insertSibling(new Node(peek()));
+                tree->insertSibling(new Node(peek()));
                 nextToken();
             } else
                 Errorstatement("VariableDeclaration IDENTIFIER", peek());
@@ -412,7 +414,7 @@ public:
             if(match("COMMA"))
             {
                 loop = true;
-                tree.insertSibling(new Node(peek()));
+                tree->insertSibling(new Node(peek()));
                 nextToken();
             }
         }
@@ -424,7 +426,7 @@ public:
     //Might need to account for a bracket call after every identifier
     void parseVariableOperation()
     {
-        tree.insertChild(new Node(peek()));
+        tree->insertChild(new Node(peek()));
         nextToken();
 
         if(match("L_BRACKET"))
@@ -433,7 +435,7 @@ public:
         }
         if(match("ASSIGNMENT_OPERATOR"))
         {
-            tree.insertSibling(new Node(peek()));
+            tree->insertSibling(new Node(peek()));
             nextToken();
             if(match("DOUBLE_QUOTE")||match("SINGLE_QUOTE"))
                 parseString();
@@ -443,14 +445,14 @@ public:
             //the identifier was a function instead of a variable
         else if(match("L_PAREN"))
         {
-            tree.insertSibling(new Node(peek()));
+            tree->insertSibling(new Node(peek()));
             nextToken();
 
             parseFunctionCallParameters();
 
             if(match("R_PAREN"))
             {
-                tree.insertSibling(new Node(peek()));
+                tree->insertSibling(new Node(peek()));
                 nextToken();
             }
             else
@@ -473,7 +475,7 @@ public:
             if(match("COMMA"))
             {
                 loop = true;
-                tree.insertSibling(new Node(peek()));
+                tree->insertSibling(new Node(peek()));
                 nextToken();
             }
 
@@ -487,19 +489,19 @@ public:
     // might need to add the ability to parse array identifiers
     void parseReturn()
     {
-        tree.insertChild(new Node(peek()));
+        tree->insertChild(new Node(peek()));
         nextToken();
 
         if(match("L_PAREN"))
         {
-            tree.insertSibling(new Node(peek()));
+            tree->insertSibling(new Node(peek()));
             nextToken();
 
             parseExpression(); //or boolean
 
             if(match("R_PAREN"))
             {
-                tree.insertSibling(new Node(peek()));
+                tree->insertSibling(new Node(peek()));
                 nextToken();
             }
             else
@@ -518,7 +520,7 @@ public:
         //i assume that at this point, the current token is known to be a DblQuote or SglQuote
         Token tokenused = peek();
         if (match("DOUBLE_QUOTE") ) {
-            tree.insertSibling(new Node(tokenused));
+            tree->insertSibling(new Node(tokenused));
             tokenused = nextToken();
 
             //invalid: last char of string is "\"
@@ -526,17 +528,17 @@ public:
             if ( !match("STRING") || tokenused.getName().back() == '\\')
                 Errorstatement("String IllegalString", tokenused);
             else
-                tree.insertSibling(new Node(tokenused));
+                tree->insertSibling(new Node(tokenused));
             tokenused = nextToken();
 
             if (match("DOUBLE_QUOTE")  )
-                tree.insertSibling(new Node(tokenused));
+                tree->insertSibling(new Node(tokenused));
             else
                 Errorstatement("String Doublequote", tokenused);
             tokenused = nextToken();
         }
         else if (match("SINGLE_QUOTE") ) {
-            tree.insertSibling(new Node(tokenused));
+            tree->insertSibling(new Node(tokenused));
             tokenused = nextToken();
 
             //invalid: last char of string is "\"
@@ -544,11 +546,11 @@ public:
             if (!match("STRING")||  tokenused.getName().back() == '\\'  )
                 Errorstatement("String Illegalstring", tokenused);
             else
-                tree.insertSibling(new Node(tokenused));
+                tree->insertSibling(new Node(tokenused));
             tokenused = nextToken();
 
             if (match("SINGLE_QUOTE") )
-                tree.insertSibling(new Node(tokenused));
+                tree->insertSibling(new Node(tokenused));
             else
                 Errorstatement("String SingleQuote", tokenused);
             tokenused = nextToken();
@@ -560,11 +562,11 @@ public:
 
         //case1: if, case2: while
         if (match("IF")   && keywordcheck(peek().getName()) == Conditional) {
-            tree.insertChild(new Node(peek()));
+            tree->insertChild(new Node(peek()));
             nextToken();
 
             if (match("L_PAREN") )
-                tree.insertSibling(new Node(peek()));
+                tree->insertSibling(new Node(peek()));
             else
                 Errorstatement("If L_PAREN", peek());
             nextToken();
@@ -572,18 +574,18 @@ public:
             parseExpression();
 
             if (match("R_PAREN")  )
-                tree.insertSibling(new Node(peek()));
+                tree->insertSibling(new Node(peek()));
             else
                 Errorstatement("If R_PAREN", peek());
             nextToken();
         }
 
         else if (match("WHILE")   && keywordcheck(peek().getName()) == Conditional) {
-            tree.insertSibling(new Node(peek()));
+            tree->insertSibling(new Node(peek()));
             nextToken();
 
             if (match("L_PAREN")  )
-                tree.insertSibling(new Node(peek()));
+                tree->insertSibling(new Node(peek()));
             else
                 Errorstatement("While L_PAREN", peek());
             nextToken();
@@ -591,7 +593,7 @@ public:
             parseExpression();
 
             if (match("R_PAREN")  )
-                tree.insertSibling(new Node(peek()));
+                tree->insertSibling(new Node(peek()));
             else
                 Errorstatement("While R_PAREN", peek());
             nextToken();
@@ -601,7 +603,7 @@ public:
 
     void parseElseStatement() {
         if (match("ELSE")   && keywordcheck(peek().getName()) == Conditional)
-            tree.insertChild(new Node(peek()));
+            tree->insertChild(new Node(peek()));
         else
             Errorstatement("Else ELSE", peek());
         nextToken();
@@ -613,31 +615,31 @@ public:
         //first statement is assumed to be the form variable = integer
         Token tokenused = peek();
         if (tokenused.getType() == "FOR" && keywordcheck(tokenused.getName()) == Conditional)
-            tree.insertChild(new Node(tokenused));
+            tree->insertChild(new Node(tokenused));
         else
             Errorstatement("For FOR", tokenused);
         tokenused = nextToken();
 
         if (tokenused.getType() == "L_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
-            tree.insertSibling(new Node(tokenused));
+            tree->insertSibling(new Node(tokenused));
         else
             Errorstatement("For L_PAREN", tokenused);
         tokenused = nextToken();
 
         if (tokenused.getType() == "IDENTIFIER" && keywordcheck(tokenused.getName()) == Identifier)
-            tree.insertSibling(new Node(tokenused));
+            tree->insertSibling(new Node(tokenused));
         else
             Errorstatement("For statement1 operand1", tokenused);
         tokenused = nextToken();
 
         if (tokenused.getType() == "ASSIGNMENT_OPERATOR" && keywordcheck(tokenused.getName()) == Identifier)
-            tree.insertSibling(new Node(tokenused));
+            tree->insertSibling(new Node(tokenused));
         else
             Errorstatement("For statement1 assignment", tokenused);
         tokenused = nextToken();
 
         if (tokenused.getType() == "INTEGER" && keywordcheck(tokenused.getName()) == Identifier)
-            tree.insertSibling(new Node(tokenused));
+            tree->insertSibling(new Node(tokenused));
         else
             Errorstatement("For statement1 operand2", tokenused);
         tokenused = nextToken();
@@ -653,13 +655,13 @@ public:
         //this line is here because parseSemicolon and parseExpression do not update tokenused
         tokenused = peek();
         if (tokenused.getType() == "IDENTIFIER" && keywordcheck(tokenused.getName()) == Identifier)
-            tree.insertSibling(new Node(tokenused));
+            tree->insertSibling(new Node(tokenused));
         else
             Errorstatement("For statement3 operand1", tokenused);
         tokenused = nextToken();
 
         if (tokenused.getType() == "ASSIGNMENT_OPERATOR" && keywordcheck(tokenused.getName()) == Identifier)
-            tree.insertSibling(new Node(tokenused));
+            tree->insertSibling(new Node(tokenused));
         else
             Errorstatement("For statement3 assignment", tokenused);
         tokenused = nextToken();
@@ -669,7 +671,7 @@ public:
         //same as above
         tokenused = peek();
         if (tokenused.getType() == "R_PAREN" && keywordcheck(tokenused.getName()) == Identifier)
-            tree.insertSibling(new Node(tokenused));
+            tree->insertSibling(new Node(tokenused));
         else
             Errorstatement("For R_PAREN", tokenused);
         tokenused = nextToken();
@@ -686,7 +688,7 @@ public:
         // Expecting a '['
 
         if (match("L_BRACKET")) {
-            tree.insertSibling(new Node(peek()));
+            tree->insertSibling(new Node(peek()));
             nextToken();
         }
         else {
@@ -699,7 +701,7 @@ public:
         }
         if(match("PLUS"))
         {
-            tree.insertSibling(new Node(peek()));
+            tree->insertSibling(new Node(peek()));
             nextToken();
         }
 
@@ -708,7 +710,7 @@ public:
         // Expecting ']'
 
         if (match("R_BRACKET")) {
-            tree.insertSibling(new Node(peek()));
+            tree->insertSibling(new Node(peek()));
         }
         else
         {
@@ -729,7 +731,7 @@ public:
         if (match("L_BRACE")) {
             braceCounter++; // increment
             braceLocation.push_back(peek().getLine()); // Push to vector
-            tree.insertChild(new Node(peek()));
+            tree->insertChild(new Node(peek()));
             nextToken();
         }
             // Expecting '}'
@@ -741,7 +743,7 @@ public:
                 exit(-1);
             }
             braceLocation.pop_back(); // Push to vector
-            tree.insertChild(new Node(peek()));
+            tree->insertChild(new Node(peek()));
             nextToken();
         }
 
@@ -752,7 +754,7 @@ public:
     // Individual function soley designed for handling semicolons
     void parseSemicolon() {
         // Init token
-        tree.insertSibling(new Node(peek()));
+        tree->insertSibling(new Node(peek()));
         nextToken();
     }
 
@@ -768,10 +770,10 @@ public:
             else if ( (match("MINUS") && tokens[current + 1].getType() == "INTEGER") || match("INTEGER") ) //negative integer
             {
                 if(match("MINUS")) {
-                    tree.insertSibling(new Node(peek()));
+                    tree->insertSibling(new Node(peek()));
                     nextToken();
                 }
-                tree.insertSibling(new Node(peek()));
+                tree->insertSibling(new Node(peek()));
                 nextToken();
             }
             else if ( ( match("BOOLEAN_NOT") && tokens[current + 1].getType() == "IDENTIFIER" && keywordcheck(tokens[current+1].getName()) == Identifier)
@@ -779,23 +781,23 @@ public:
             {
                 if (match("BOOLEAN_NOT")) //insert ! if there is one
                 {
-                    tree.insertSibling(new Node(peek()));
+                    tree->insertSibling(new Node(peek()));
                     nextToken();
                 }
 
-                tree.insertSibling(new Node(peek())); //insert identifier
+                tree->insertSibling(new Node(peek())); //insert identifier
                 nextToken();
 
                 if (match("L_BRACKET"))
                     parseBracket();
 
                 else if (match("L_PAREN")) { //insert function parameters if the identifier is a function
-                    tree.insertSibling(new Node(peek()));
+                    tree->insertSibling(new Node(peek()));
                     nextToken();
                     parseFunctionCallParameters();
 
                     if (match("R_PAREN")) {
-                        tree.insertSibling(new Node(peek()));
+                        tree->insertSibling(new Node(peek()));
                         nextToken();
                     } else
                         Errorstatement("ExpressionParse R_PAREN", peek());
@@ -803,13 +805,13 @@ public:
             }
             else if (match("L_PAREN"))
             {
-                tree.insertSibling(new Node(peek()));
+                tree->insertSibling(new Node(peek()));
                 nextToken();
 
                 parseExpression();
 
                 if (match("R_PAREN")) {
-                    tree.insertSibling(new Node(peek()));
+                    tree->insertSibling(new Node(peek()));
                     nextToken();
                 } else
                     Errorstatement("ExpressionParse R_PAREN", peek());
@@ -822,7 +824,7 @@ public:
             if(find(operandlist.begin(),operandlist.end(),peek().getType()) != operandlist.end()) //if the token is in operandlist
             {
                 loop = true;
-                tree.insertSibling(new Node(peek()));
+                tree->insertSibling(new Node(peek()));
                 nextToken();
             }
         }

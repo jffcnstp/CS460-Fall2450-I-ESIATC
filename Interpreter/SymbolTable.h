@@ -32,9 +32,9 @@ class SymbolTable{
     Symbol* Root;
     Symbol* Tail;
     Symbol* Traversal;
-    LCRSTree CST;
+    LCRSTree *CST;
 public:
-    SymbolTable(LCRSTree inputtree){Root= nullptr;Tail= nullptr;Traversal= nullptr; CST=inputtree;}
+    SymbolTable(LCRSTree *inputtree){Root= nullptr;Tail= nullptr;Traversal= nullptr; CST=inputtree;}
 
     void addSymbol(Symbol *entry)
     {
@@ -53,7 +53,7 @@ public:
     void printSymbolTable()
     {
         Traversal=Root;
-        while(Traversal->next !=nullptr)
+        while(Traversal !=nullptr)
         {
             cout<<"IDENTIFIER_NAME: "<<Traversal->name<<endl
             << "IDENTIFIER_TYPE: "<<Traversal->type<<endl
@@ -94,34 +94,28 @@ public:
     void BuildTable()
     {
         int currentscope =0,scopenum=0,bracecounter=0;//not finalized need to think about whether this 2 int system is good enough
-        while(!CST.EOT())
+        while(!CST->EOT())
         {
-            Node* current=CST.getCurrentNode();
+            Node* current=CST->getCurrentNode();
             if(current->data.getType()=="FUNCTION")
             {
                 scopenum+=1;
-                //addFunction(scopenum)
+                populateDeclaredFunction(scopenum);
             }
             else if(current->data.getType()=="PROCEDURE")
             {
                 scopenum+=1;
-                //addProcedure(scopenum)
+                populateDeclaredProcedure(scopenum);
             }
-            else if(current->data.getType()=="IDENTIFIER")
+            else if(current->data.getType()=="IDENTIFIER" && find(begin(typekeyword),end(typekeyword),current->data.getName()) != end(typekeyword))
             {
-                for(auto &keyword : typekeyword)
-                {
-                    if(keyword == current->data.getName()) {
-                        //addVariable(currentscope);
-                        break;
-                    }
-                }
+                populateDeclaredvariable(currentscope);
             }
             else if(current->data.getType()=="L_BRACE" )
             {
                 bracecounter+=1;
                 currentscope=scopenum;
-                CST.nextNode();
+                CST->nextNode();
             }
             else if(current->data.getType()=="R_BRACE")
             {
@@ -129,81 +123,38 @@ public:
                 if(bracecounter == 0)
                     currentscope=0;
 
-                CST.nextNode();
+                CST->nextNode();
             }
             else
-                CST.nextChild(); //skips over the entire Sibling chain into the next Child
+                CST->nextChild(); //skips over the entire Sibling chain into the next Child
         }
     }
 
     // PA4: populateDeclaredFunction();
-    // populates a node of the Symbol table that assumes the identifier we’ve hit is a Function.
-    // NOTE: Requires the populateParameter() function when parenthesis is hit in the symbol tree.
-    // Parameters: All of these parameters are for the existsInTable() function atm that checks if the current
-    // node is the symbol table already.
-    void populateDeclaredFunction(int currentScope, int scopeNum, const string& type, LCRSTree &CST) {
-        // Setup variables
-        Symbol* currentSymbol = Root;
-        bool multipleDeclaredFunctions = true;
-        string varname;
-        string vartype = CST.getCurrentNode()->data.getName();
+    // This function populates a parameter within a function and passes an incomplete symbol to the populateDeclaredFunctionParameter()
+    // Parameters: currentScope, the scope/number the symbol table is currently in.
+    void populateDeclaredFunction(int currentScope) {
 
-        // Check to see if the current node is a function
-        if(CST.getCurrentNode()->data.getType()=="FUNCTION")
-        {
-            // Do another check, in here to verify this isn't already in the symbol table
-            if (existsInTable(currentScope,varname)) {
-                // Call the error statement function for this part.
-                // errorStatement("DeclaredFunction", currentScope, current);
-            }
-                // Do thing
-            else {
-                // TODO: uncomment me later
-                // Do something most-likely with populateParameter() function.
-                // PopulateDeclaredFunctionParameter(Symbol* newSym)
-            }
+        // Create a symbol
+        Symbol* currentSymbol = new Symbol;
+        currentSymbol->scope = currentScope;
+
+        // At this point move down the CST and do the thing below
+        // Populate current symbol with name, type, datatype, and the current scope.
+        CST->nextNode(); // move past the function declaration
+        currentSymbol->datatype = CST->getCurrentNode()->data.getName();
+        CST->nextNode();
+        currentSymbol->name = CST->getCurrentNode()->data.getName();
+        CST->nextNode(); // move past its type and onto the name.
+        currentSymbol->type ="FUNCTION";
+        if(CST->getCurrentNode()->data.getType()=="L_PAREN") {
+            CST->nextNode();
+            populateDeclaredFunctionParameter(currentSymbol);
         }
-
-        CST.nextNode(); // Go past function declaration into a L_PAREN
-        
-
-        while (multipleDecalredFunctions) {
-            multipleDecalredFunctions = false;
-            varname=CST.getCurrentNode()->data.getName();
-
-            if(CST.getCurrentNode()->data.getType()=="L_PAREN") {
-                // FIXME: unsure if contents of Symbol is correct.
-                // This should be adding the function declaration itself to the table, I think.
-                addSymbol(new Symbol(varname,"datatype",vartype,true,stoi(CST.getCurrentNode()->data.getName()),currentscope));
-                CST.nextNode(); // move to either end of function declaration or comma.
-            }
-
-            else {
-                // Adding the current node, something like a int something, to table.
-                addSymbol(new Symbol(varname,"datatype",vartype,false,0,currentscope));
-            }
-
-            // Comma case.
-            if(CST.getCurrentNode()->data.getType()=="COMMA")
-            {
-                multiplevariables=true;
-                CST.nextNode(); // Go next
-            }
-
-            // Check for a closing parenthesis
-            if(CST.getCurrentNode()->data.getType()=="R_PAREN")
-            {
-                CST.nextNode(); // This is a valid function declaration
-            }
-
-            // Error statement...
-            else
-            {
-                cout<<"THERE IS SUPPOSED TO BE A PARENTHESIS HERE.  INSTEAD IT'S A "<<CST.getCurrentNode()->data.getName() <<" TOKEN ON LINE: "<<CST.getCurrentNode()->data.getLine();
-                exit(-2);
-            }
-
-        }
+        else
+            errorStatement("missing L_PAREN in Function",currentScope,CST->getCurrentNode());
+        addSymbol(currentSymbol);
+        CST->nextNode();
     }
 
     void populateDeclaredvariable(int currentscope)
@@ -211,39 +162,39 @@ public:
 
         bool multiplevariables=true;
         string varname;
-        string vartype=CST.getCurrentNode()->data.getName();
-        CST.nextNode();
+        string vartype=CST->getCurrentNode()->data.getName();
+        CST->nextNode();
         while(multiplevariables)
         {
             multiplevariables=false;
-            varname=CST.getCurrentNode()->data.getName();
-            //if(existsInTable(varname,currentscope))
-            //      errorStatement("DeclaredVariable alreadyexists", currentscope,CST.getcurrentNode());
-            CST.nextNode();// move to the L_BRACKET OR COMMA OR SEMICOLON NODE
-            if(CST.getCurrentNode()->data.getType()=="L_BRACKET")
+            varname=CST->getCurrentNode()->data.getName();
+            if(existsInTable(currentscope,varname))
+                  errorStatement("DeclaredVariable alreadyexists", currentscope,CST->getCurrentNode());
+            CST->nextNode();// move to the L_BRACKET OR COMMA OR SEMICOLON NODE
+            if(CST->getCurrentNode()->data.getType()=="L_BRACKET")
             {
-                CST.nextNode();     //moves to the arraysize node
-                addSymbol(new Symbol(varname,"datatype",vartype,true,stoi(CST.getCurrentNode()->data.getName()),currentscope));
-                CST.nextNode();     //move to R_BRACKET
-                CST.nextNode();     //move to COMMA OR SEMICOLON NODE
+                CST->nextNode();     //moves to the arraysize node
+                addSymbol(new Symbol(varname,"datatype",vartype,true,stoi(CST->getCurrentNode()->data.getName()),currentscope));
+                CST->nextNode();     //move to R_BRACKET
+                CST->nextNode();     //move to COMMA OR SEMICOLON NODE
             }
             else
             {
                 addSymbol(new Symbol(varname,"datatype",vartype,false,0,currentscope));
             }
-            if(CST.getCurrentNode()->data.getType()=="COMMA")
+            if(CST->getCurrentNode()->data.getType()=="COMMA")
             {
                 multiplevariables=true;
-                CST.nextNode();
+                CST->nextNode();
             }
         }
-        if(CST.getCurrentNode()->data.getType()=="SEMICOLON")
+        if(CST->getCurrentNode()->data.getType()=="SEMICOLON")
         {
-            CST.nextNode();
+            CST->nextNode();
         }
         else
         {
-            cout<<"THERE IS SUPPOSED TO BE A SEMICOLON HERE.  INSTEAD IT'S A "<<CST.getCurrentNode()->data.getName() <<" TOKEN ON LINE: "<<CST.getCurrentNode()->data.getLine();
+            cout<<"THERE IS SUPPOSED TO BE A SEMICOLON HERE.  INSTEAD IT'S A "<<CST->getCurrentNode()->data.getName() <<" TOKEN ON LINE: "<<CST->getCurrentNode()->data.getLine();
             exit(-2);
         }
     }
@@ -265,7 +216,7 @@ public:
     bool existsInTable(int currentScope, const string& name) {
         Symbol* currentSymbol = Root;
 
-        while (currentSymbol->next != nullptr) { //loop through the entire Symbol Table
+        while (currentSymbol!= nullptr) { //loop through the entire Symbol Table
 
             if (currentSymbol->type == "datatype") {
                 //name matches an identifier that exists in global or same scope
@@ -275,13 +226,14 @@ public:
                 }
             }
             else {
-                while (!currentSymbol->parameterNames.empty()) { //checking current CST node against current Symbol's parameters, if any
+                if(!currentSymbol->parameterNames.empty()) { //checking current CST node against current Symbol's parameters, if any
                     for (const auto &i: currentSymbol->parameterNames) {
                         if (name == i &&
                             (currentSymbol->scope == 0 || currentSymbol->scope == currentScope)) {
                             return true;
                         }
                     }
+
                 }
             }
 
@@ -292,16 +244,11 @@ public:
     }
 
 
-    void populateDeclaredProcedure(SymbolTable &table, LCRSTree &CST, int currentScope, int scopeNum) {
-        Node* currentNode = CST.getCurrentNode();
-
-        // Verify that current node is indeed an identifier for a procedure
-        if (currentNode->data.getType() != "PROCEDURE") {
-            error("Expected PROCEDURE type but found: " + currentNode->data.getType());
-            return;
-        }
-
+    void populateDeclaredProcedure(int currentScope) {
+        CST->nextNode();
+        Node* currentNode = CST->getCurrentNode();
         // Extract procedure name and data type
+
         string procedureName = currentNode->data.getName();
         string procedureType = "PROCEDURE"; // To keep type consistent
         string procedureDataType = "void";  // Default to void for procedures
@@ -310,41 +257,33 @@ public:
         Symbol* newProcedure = new Symbol(procedureName, procedureType, procedureDataType, false, 0, currentScope);
 
         // Move to the next node to check for parameter list (i.e., an open parenthesis)
-        CST.nextNode();
-        currentNode = CST.getCurrentNode();
+        CST->nextNode();
+        currentNode = CST->getCurrentNode();
         if (currentNode->data.getType() != "L_PAREN") {
-            error("Expected '(' after procedure name for parameter list.");
-            delete newProcedure; // Clean up in case of error
-            return;
+            errorStatement("Expected '(' after procedure name for parameter list.",currentScope,currentNode);
         }
 
         // Populate parameters by passing the symbol to PopulateDeclaredFunctionParameter
-        CST.nextNode(); // Move inside the parentheses
-        populateDeclaredFunctionParameter(newProcedure, CST);
+        CST->nextNode(); // Move inside the parentheses
+        populateDeclaredFunctionParameter(newProcedure);
 
         // Add the newly populated procedure entry to the symbol table
-        table.addSymbol(newProcedure);
+        addSymbol(newProcedure);
+        CST->nextNode();
     }
 
-    void error(const std::string& message) const {
-        std::cerr << "Symbol Table Error: " << message << std::endl;
-        
-        // Possible additions could include logging to a file, halting certain operations, etc.
-    }
-
-    void populateDeclaredFunctionParameter(Symbol *symbol, LCRSTree &CST) {
+    void populateDeclaredFunctionParameter(Symbol *symbol) {
         bool multipleParameters = true;
 
         //Returns if no parameters
-        if (CST.getCurrentNode()->data.getType() == "R_PAREN") {
-            CST.nextNode();
+        if (CST->getCurrentNode()->data.getType() == "R_PAREN") {
             return;
         }
 
         //Moves past loop if parameter is void
-        if (CST.getCurrentNode()->data.getType() == "void") {
+        if (CST->getCurrentNode()->data.getName() == "void") {
             multipleParameters = false;
-            CST.nextNode();
+            CST->nextNode();
         }
 
         while (multipleParameters) {
@@ -352,19 +291,19 @@ public:
             bool isArray = false;
             int arraySize = 0;
 
-            string paramType = CST.getCurrentNode()->data.getName();
-            CST.nextNode();
+            string paramType = CST->getCurrentNode()->data.getName();
+            CST->nextNode();
 
-            string paramName = CST.getCurrentNode()->data.getName();
-            CST.nextNode();
+            string paramName = CST->getCurrentNode()->data.getName();
+            CST->nextNode();
 
             //Updates variables if parameter is an array
-            if (CST.getCurrentNode()->data.getType() == "L_BRACKET") {
+            if (CST->getCurrentNode()->data.getType() == "L_BRACKET") {
                 isArray = true;
-                CST.nextNode(); //Moves to array size
-                arraySize = stoi(CST.getCurrentNode()->data.getName());
-                CST.nextNode(); //Moves to R_BRACKET
-                CST.nextNode(); //Moves to COMMA or R_PAREN
+                CST->nextNode(); //Moves to array size
+                arraySize = stoi(CST->getCurrentNode()->data.getName());
+                CST->nextNode(); //Moves to R_BRACKET
+                CST->nextNode(); //Moves to COMMA or R_PAREN
             }
 
             //Adds parameters to parent Function/Procedure SymbolTable
@@ -374,18 +313,18 @@ public:
             symbol->parametersArraySizes.push_back(arraySize);
 
             //Loops again if true
-            if (CST.getCurrentNode()->data.getType() == "COMMA") {
+            if (CST->getCurrentNode()->data.getType() == "COMMA") {
                 multipleParameters = true;
-                CST.nextNode();
+                CST->nextNode();
             }
         }
 
         //Returns error if not on R_PAREN
-        if(CST.getCurrentNode()->data.getType() == "R_PAREN") {
-            CST.nextNode();
-        }else {
-            cout<<"THERE IS SUPPOSED TO BE A RIGHT PARENTHESIS HERE.  INSTEAD IT'S A "
-                << CST.getCurrentNode()->data.getName() << " TOKEN ON LINE: " << CST.getCurrentNode()->data.getLine();
+        if(CST->getCurrentNode()->data.getType() != "R_PAREN") {
+
+            cout << "THERE IS SUPPOSED TO BE A RIGHT PARENTHESIS HERE.  INSTEAD IT'S A "
+                 << CST->getCurrentNode()->data.getName() << " TOKEN ON LINE: "
+                 << CST->getCurrentNode()->data.getLine();
             exit(-2);
         }
     }
