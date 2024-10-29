@@ -100,19 +100,19 @@ public:
             if(current->data.getType()=="FUNCTION")
             {
                 scopenum+=1;
-                //addFunction(scopenum)
+                populateDeclaredFunction(scopenum);
             }
             else if(current->data.getType()=="PROCEDURE")
             {
                 scopenum+=1;
-                //addProcedure(scopenum)
+                populateDeclaredProcedure(scopenum);
             }
             else if(current->data.getType()=="IDENTIFIER")
             {
                 for(auto &keyword : typekeyword)
                 {
                     if(keyword == current->data.getName()) {
-                        //addVariable(currentscope);
+                        populateDeclaredvariable(currentscope);
                         break;
                     }
                 }
@@ -199,7 +199,7 @@ public:
             // Error statement...
             else
             {
-                cout<<"THERE IS SUPPOSED TO BE A PARENTHESIS HERE.  INSTEAD IT'S A "<<CST.getCurrentNode()->data.getName() <<" TOKEN ON LINE: "<<CST.getCurrentNode()->data.getLine();
+                errorStatement("THERE IS SUPPOSED TO BE A PARENTHESIS HERE. ",currentScope,CST.getCurrentNode());
                 exit(-2);
             }
 
@@ -243,7 +243,7 @@ public:
         }
         else
         {
-            cout<<"THERE IS SUPPOSED TO BE A SEMICOLON HERE.  INSTEAD IT'S A "<<CST.getCurrentNode()->data.getName() <<" TOKEN ON LINE: "<<CST.getCurrentNode()->data.getLine();
+            errorStatement("There is supposed to be a Semicolon here at the end of variable declaration.",currentscope,CST.getCurrentNode());
             exit(-2);
         }
     }
@@ -254,7 +254,7 @@ public:
     // Parameters copy existsInTable() function for now. fromwhere specifies what function it is from i.e. 
     // "populateDeclaredFunction". 
     void errorStatement(string fromwhere, int currentScope, Node* node) {
-        cout << fromwhere << " error with " << " Scope was: "
+        cout << fromwhere << " Scope was: "
         << currentScope << " variable was: " << node->data.getType()<<" "<<node->data.getName()<<" on line "<<node->data.getLine() << endl;
         exit(-1);
     }
@@ -292,14 +292,9 @@ public:
     }
 
 
-    void populateDeclaredProcedure(SymbolTable &table, LCRSTree &CST, int currentScope, int scopeNum) {
+    void populateDeclaredProcedure( int currentScope) {
+        CST.nextNode();
         Node* currentNode = CST.getCurrentNode();
-
-        // Verify that current node is indeed an identifier for a procedure
-        if (currentNode->data.getType() != "PROCEDURE") {
-            error("Expected PROCEDURE type but found: " + currentNode->data.getType());
-            return;
-        }
 
         // Extract procedure name and data type
         string procedureName = currentNode->data.getName();
@@ -313,9 +308,7 @@ public:
         CST.nextNode();
         currentNode = CST.getCurrentNode();
         if (currentNode->data.getType() != "L_PAREN") {
-            error("Expected '(' after procedure name for parameter list.");
-            delete newProcedure; // Clean up in case of error
-            return;
+            errorStatement("Expected '(' after procedure name for parameter list.",currentScope,CST.getCurrentNode());
         }
 
         // Populate parameters by passing the symbol to PopulateDeclaredFunctionParameter
@@ -323,16 +316,14 @@ public:
         populateDeclaredFunctionParameter(newProcedure, CST);
 
         // Add the newly populated procedure entry to the symbol table
-        table.addSymbol(newProcedure);
+        addSymbol(newProcedure);
+        CST.nextNode();
+        if(CST.getCurrentNode()->data.getType() != "SEMICOLON")
+            errorStatement("Expected ';' after R_PAREN for parameter list.",currentScope,CST.getCurrentNode());
+        CST.nextNode();
     }
 
-    void error(const std::string& message) const {
-        std::cerr << "Symbol Table Error: " << message << std::endl;
-        
-        // Possible additions could include logging to a file, halting certain operations, etc.
-    }
-
-    void populateDeclaredFunctionParameter(Symbol *symbol, LCRSTree &CST) {
+    void populateDeclaredFunctionParameter(Symbol *symbol) {
         bool multipleParameters = true;
 
         //Returns if no parameters
