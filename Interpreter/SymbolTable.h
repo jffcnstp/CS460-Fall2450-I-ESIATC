@@ -320,7 +320,7 @@ public:
 
         // Populate parameters by passing the symbol to PopulateDeclaredFunctionParameter
         CST.nextNode(); // Move inside the parentheses
-        PopulateDeclaredFunctionParameter(newProcedure, CST);
+        populateDeclaredFunctionParameter(newProcedure, CST);
 
         // Add the newly populated procedure entry to the symbol table
         table.addSymbol(newProcedure);
@@ -330,6 +330,64 @@ public:
         std::cerr << "Symbol Table Error: " << message << std::endl;
         
         // Possible additions could include logging to a file, halting certain operations, etc.
+    }
+
+    void populateDeclaredFunctionParameter(Symbol *symbol, LCRSTree &CST) {
+        bool multipleParameters = true;
+
+        //Returns if no parameters
+        if (CST.getCurrentNode()->data.getType() == "R_PAREN") {
+            CST.nextNode();
+            return;
+        }
+
+        //Moves past loop if parameter is void
+        if (CST.getCurrentNode()->data.getType() == "void") {
+            multipleParameters = false;
+            CST.nextNode();
+        }
+
+        while (multipleParameters) {
+            multipleParameters = false;
+            bool isArray = false;
+            int arraySize = 0;
+
+            string paramType = CST.getCurrentNode()->data.getName();
+            CST.nextNode();
+
+            string paramName = CST.getCurrentNode()->data.getName();
+            CST.nextNode();
+
+            //Updates variables if parameter is an array
+            if (CST.getCurrentNode()->data.getType() == "L_BRACKET") {
+                isArray = true;
+                CST.nextNode(); //Moves to array size
+                arraySize = stoi(CST.getCurrentNode()->data.getName());
+                CST.nextNode(); //Moves to R_BRACKET
+                CST.nextNode(); //Moves to COMMA or R_PAREN
+            }
+
+            //Adds parameters to parent Function/Procedure SymbolTable
+            symbol->parameterNames.push_back(paramName);
+            symbol->parameterDatatypes.push_back(paramType);
+            symbol->isParameterArray.push_back(isArray);
+            symbol->parametersArraySizes.push_back(arraySize);
+
+            //Loops again if true
+            if (CST.getCurrentNode()->data.getType() == "COMMA") {
+                multipleParameters = true;
+                CST.nextNode();
+            }
+        }
+
+        //Returns error if not on R_PAREN
+        if(CST.getCurrentNode()->data.getType() == "R_PAREN") {
+            CST.nextNode();
+        }else {
+            cout<<"THERE IS SUPPOSED TO BE A RIGHT PARENTHESIS HERE.  INSTEAD IT'S A "
+                << CST.getCurrentNode()->data.getName() << " TOKEN ON LINE: " << CST.getCurrentNode()->data.getLine();
+            exit(-2);
+        }
     }
 
 
