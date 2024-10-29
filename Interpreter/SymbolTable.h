@@ -137,73 +137,26 @@ public:
     }
 
     // PA4: populateDeclaredFunction();
-    // populates a node of the Symbol table that assumes the identifier we’ve hit is a Function.
-    // NOTE: Requires the populateParameter() function when parenthesis is hit in the symbol tree.
-    // Parameters: All of these parameters are for the existsInTable() function atm that checks if the current
-    // node is the symbol table already.
-    void populateDeclaredFunction(int currentScope, int scopeNum, const string& type, LCRSTree &CST) {
-        // Setup variables
-        Symbol* currentSymbol = Root;
-        bool multipleDeclaredFunctions = true;
-        string varname;
-        string vartype = CST.getCurrentNode()->data.getName();
+    // This function populates a parameter within a function and passes an incomplete symbol to the populateDeclaredFunctionParameter()
+    // Parameters: currentScope, the scope/number the symbol table is currently in.
+    void populateDeclaredFunction(int currentScope) {
 
-        // Check to see if the current node is a function
-        if(CST.getCurrentNode()->data.getType()=="FUNCTION")
-        {
-            // Do another check, in here to verify this isn't already in the symbol table
-            if (existsInTable(currentScope,varname)) {
-                // Call the error statement function for this part.
-                // errorStatement("DeclaredFunction", currentScope, current);
-            }
-                // Do thing
-            else {
-                // TODO: uncomment me later
-                // Do something most-likely with populateParameter() function.
-                // PopulateDeclaredFunctionParameter(Symbol* newSym)
-            }
-        }
+        // Create a symbol
+        Symbol* currentSymbol = new Symbol;
+        currentSymbol.scope = currentScope;
 
-        CST.nextNode(); // Go past function declaration into a L_PAREN
-        
+        // At this point move down the CST and do the thing below
+        // Populate current symbol with name, type, datatype, and the current scope.
+        CST.nextChild(); // move past the function declaration
+        currentSymbol.datatype = CST.getCurrentNode()->data.getType();
+        currentSymbol.type = CST.getCurrentNode()->data.getType();
+        CST.nextChild(); // move past its type and onto the name.
+        currentSymbol.name = CST.getCurrentNode()->data.getName();
 
-        while (multipleDecalredFunctions) {
-            multipleDecalredFunctions = false;
-            varname=CST.getCurrentNode()->data.getName();
+        // Pass the newly created, but incomplete symbol using populateDeclaredFunctionParameter().
+        populateDeclaredFunctionParameter(Symbol *currentSymbol, LCRSTree &CST);
 
-            if(CST.getCurrentNode()->data.getType()=="L_PAREN") {
-                // FIXME: unsure if contents of Symbol is correct.
-                // This should be adding the function declaration itself to the table, I think.
-                addSymbol(new Symbol(varname,"datatype",vartype,true,stoi(CST.getCurrentNode()->data.getName()),currentscope));
-                CST.nextNode(); // move to either end of function declaration or comma.
-            }
 
-            else {
-                // Adding the current node, something like a int something, to table.
-                addSymbol(new Symbol(varname,"datatype",vartype,false,0,currentscope));
-            }
-
-            // Comma case.
-            if(CST.getCurrentNode()->data.getType()=="COMMA")
-            {
-                multiplevariables=true;
-                CST.nextNode(); // Go next
-            }
-
-            // Check for a closing parenthesis
-            if(CST.getCurrentNode()->data.getType()=="R_PAREN")
-            {
-                CST.nextNode(); // This is a valid function declaration
-            }
-
-            // Error statement...
-            else
-            {
-                cout<<"THERE IS SUPPOSED TO BE A PARENTHESIS HERE.  INSTEAD IT'S A "<<CST.getCurrentNode()->data.getName() <<" TOKEN ON LINE: "<<CST.getCurrentNode()->data.getLine();
-                exit(-2);
-            }
-
-        }
     }
 
     void populateDeclaredvariable(int currentscope)
