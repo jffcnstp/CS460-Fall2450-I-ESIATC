@@ -13,17 +13,18 @@ using namespace std;
 // Main function
 int main() {
     vector<Token> tokenlist;
-    string fileName ="programming_assignment_4-test_file_";
+    string fileName ="programming_assignment_5-test_file_";
     string tokenizefile="test_file";
     Parser *CST;
     SymbolTable *Table;
 
-    for(int i=1; i <8; i++) {
+    for(int i=1; i <6; i++) {
         ignoreComments(fileName + std::to_string(i) + ".c", tokenizefile + std::to_string(i) + ".c");
         tokenlist = Tokenize(tokenizefile + std::to_string(i) + ".c");
         CST= new Parser(tokenlist);
         CST->buildCST();
         cout<<"CST built successfully"<<endl;
+        CST->tree->breadthFirstTraversal();
         CST->tree->resetCurrentNode();
         Table=new SymbolTable(CST->getCST());
         Table->BuildTable();

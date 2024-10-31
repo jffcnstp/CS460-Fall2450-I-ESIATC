@@ -1,25 +1,76 @@
-                                                                                                                                                            
+                                                     
+                                                     
+                                                     
 
-char announcement[2048];
+
+
+                                                                                             
+                                                                                             
+                                                                                             
+                                                                                             
+                                                                                                             
+                                                                                             
+                                                                                             
+                                                                                             
+procedure fizzbuzz (int counter)
+{
+  int state;
+
+  state = 0;
+  if ((counter % 3) == 0)
+  {
+    state = 1;
+  }
+  if ((counter % 5) == 0)
+  {
+    state = state * 2 + 2;
+  }
+  if (state == 1)
+  {
+    printf ("Fizz");
+  }
+  else
+  {
+    if (state == 2)
+    {
+      printf ("Buzz");
+    }
+    else
+    {
+      if (state == 4)
+      {
+        printf ("Fizzbuzz");
+      }
+      else
+      {
+        printf ("%d", counter);
+      }
+    }
+  }
+}
+
+
+
 
 
 procedure main (void)
 {
-  char name[100];
-  char announcement[64];
+  int counter;
+
+  counter = 1;
+  while (counter <= 100)
+  {
+    fizzbuzz (counter);
+    counter = counter + 1;
+    if (counter <= 100)
+    {
+      printf (", ");
+    }
+    else
+    {
+      printf ("\n");
+    }
+  }
 }
 
-
-function bool my_function (char byte)
-{
-  int i, j;
-  bool found_something;
-
-  return found_something;
-}
-
-
-procedure my_procedure (int i, int j, int k)
-{
-}
 
