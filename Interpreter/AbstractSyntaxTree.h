@@ -53,6 +53,9 @@ public:
         bool expression = true;
         while (expression) {
             loop = false;
+            if (current->data.getType() == "SEMICOLON") {
+                expression = false;
+            }
             if (current->data.getType() == "IDENTIFIER" || current->data.getType() == "INTEGER" ||
                 current->data.getType() == "SINGLE_QUOTE" || current->data.getType() == "DOUBLE_QUOTE" ||
                 current->data.getType() == "STRING") {
@@ -61,14 +64,14 @@ public:
             }
             else
             {
-                if (current->data.getType() == "LEFT_PARENTHESIS") {
+                if (current->data.getType() == "L_PAREN") {
                     operatorStack.push(current);
                     current = current->rightSibling;
                 }
                 else
                 {
-                    if (current->data.getType() == "RIGHT_PARENTHESIS") {
-                        while (operatorStack.top()->data.getType() != "LEFT_PARENTHESIS") {
+                    if (current->data.getType() == "R_PAREN") {
+                        while (operatorStack.top()->data.getType() != "L_PAREN") {
                             AST->insertSibling(new Node(operatorStack.top()->data));
                             operatorStack.pop();
                         }
@@ -78,7 +81,7 @@ public:
                     {
                         if (current->data.getType() == "PLUS" || current->data.getType() == "MINUS" ||
                             current->data.getType() == "ASTERISK" || current->data.getType() == "DIVIDE" ||
-                            current->data.getType() == "ASSIGNMENT") {
+                            current->data.getType() == "ASSIGNMENT_OPERATOR") {
                             if (operatorStack.empty()) {
                                 operatorStack.push(current);
                                 current = current->rightSibling;
@@ -130,7 +133,7 @@ public:
                                         }
                                     }
                                     else {
-                                        if (current->data.getType() == "ASSIGNMENT") {
+                                        if (current->data.getType() == "ASSIGNMENT_OPERATOR") {
                                             loop = true;
                                             while (loop) {
                                                 if (!operatorStack.empty()) {
