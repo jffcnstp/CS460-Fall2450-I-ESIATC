@@ -10,27 +10,6 @@
 #include "stack"
 #include "queue"
 
-std::unordered_map<std::string, int> opPrecedence {
-        {"(", 6},
-        {")", 6},
-
-        {"*", 5},
-        {"/", 5},
-        {"+", 4},
-        {"-", 4},
-
-        {">=", 3},
-        {"<=", 3},
-        {">", 3},
-        {"<", 3},
-        {"==", 3},
-
-        {"&&", 2},
-        {"||", 1},
-
-        {"=", 0},
-};
-
 
 class AbstractSyntaxTree{
     LCRSTree *AST;
