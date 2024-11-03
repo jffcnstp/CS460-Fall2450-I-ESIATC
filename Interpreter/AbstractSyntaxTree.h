@@ -40,10 +40,8 @@ public:
         std::stack<Node*> operatorStack;
         Node *current = CST->getCurrentNode();
 
-        bool loop;
         bool expression = true;
         while (expression) {
-            loop = false;
             if (current->rightSibling == nullptr) {
                 expression = false;
             }
