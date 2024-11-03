@@ -52,10 +52,6 @@ public:
                 {
                     if (current->data.getType() == "R_PAREN") {
                         while (operatorStack.top()->data.getType() != "L_PAREN") {
-                            if (operatorStack.empty()) {
-                                cout << "There's been a terrible accident!";
-                                exit(-1);
-                            }
                             cout << operatorStack.top()->data.getName() << " ";
                             AST->insertSibling(new Node(operatorStack.top()->data));
                             operatorStack.pop();
@@ -67,7 +63,11 @@ public:
                     {
                         if (current->data.getType() == "PLUS" || current->data.getType() == "MINUS" ||
                             current->data.getType() == "ASTERISK" || current->data.getType() == "DIVIDE" ||
-                            current->data.getType() == "ASSIGNMENT_OPERATOR") {
+                            current->data.getType() == "ASSIGNMENT_OPERATOR" || current->data.getType() == "LT" ||
+                            current->data.getType() == "GT" || current->data.getType() == "LT_EQUAL" ||
+                            current->data.getType() == "GT_EQUAL" || current->data.getType() == "BOOLEAN_AND" ||
+                            current->data.getType() == "BOOLEAN_OR" || current->data.getType() == "BOOLEAN_NOT" ||
+                            current->data.getType() == "BOOLEAN_EQUAL" || current->data.getType() == "BOOLEAN_NOT_EQUAL") {
                             if (operatorStack.empty()) {
                                 operatorStack.push(current);
                                 current = current->rightSibling;
