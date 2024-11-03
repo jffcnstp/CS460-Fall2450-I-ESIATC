@@ -4,11 +4,8 @@
 
 #ifndef INTERPRETER_ABSTRACTSYNTAXTREE_H
 #define INTERPRETER_ABSTRACTSYNTAXTREE_H
-#include "map"
-#include "unordered_map"
 #include "string"
 #include "stack"
-#include "queue"
 
 
 class AbstractSyntaxTree{
