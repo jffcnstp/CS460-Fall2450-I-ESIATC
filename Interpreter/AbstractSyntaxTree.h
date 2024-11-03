@@ -32,7 +32,8 @@ public:
             opType == "LT" || opType == "GT" ||
             opType == "LT_EQUAL" || opType == "GT_EQUAL") return 4;
         if (opType == "PLUS" || opType == "MINUS") return 5;
-        if (opType == "ASTERISK" || opType == "DIVIDE") return 6;
+        if (opType == "ASTERISK" || opType == "DIVIDE" || opType == "MODULO") return 6;
+        if (opType == "BOOLEAN_NOT") return 7;
         return 0;
     }
 
@@ -44,6 +45,8 @@ public:
         while (expression) {
             if (current->rightSibling == nullptr) {
                 expression = false;
+                current = current->rightSibling;
+                continue;
             }
             if (current->data.getType() == "IDENTIFIER" || current->data.getType() == "INTEGER" ||
                 current->data.getType() == "SINGLE_QUOTE" || current->data.getType() == "DOUBLE_QUOTE" ||
@@ -57,7 +60,7 @@ public:
                 current = current->rightSibling;
             }
             else if (current->data.getType() == "R_PAREN") {
-                while (!operatorStack.empty() && operatorStack.top()->data.getType() == "L_PAREN") {
+                while (!operatorStack.empty() && operatorStack.top()->data.getType() != "L_PAREN") {
                     cout << operatorStack.top()->data.getName() << " ";
                     AST->insertSibling(new Node(operatorStack.top()->data));
                     operatorStack.pop();
