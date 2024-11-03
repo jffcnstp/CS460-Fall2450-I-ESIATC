@@ -40,7 +40,7 @@ public:
 
         bool expression = true;
         while (expression) {
-            if (current->rightSibling == nullptr) {
+            if (current->rightSibling == nullptr) { //end of current expression
                 expression = false;
                 current = current->rightSibling;
                 continue;
@@ -48,7 +48,7 @@ public:
             if (current->data.getType() == "IDENTIFIER" || current->data.getType() == "INTEGER" ||
                 current->data.getType() == "SINGLE_QUOTE" || current->data.getType() == "DOUBLE_QUOTE" ||
                 current->data.getType() == "STRING") {
-                cout << current->data.getName() << " ";
+                //cout << current->data.getName() << " ";
                 AST->insertSibling(new Node(current->data));
                 current = current->rightSibling;
             }
@@ -56,21 +56,21 @@ public:
                 operatorStack.push(current);
                 current = current->rightSibling;
             }
-            else if (current->data.getType() == "R_PAREN") {
+            else if (current->data.getType() == "R_PAREN") { //dump operator stack until L_PAREN
                 while (!operatorStack.empty() && operatorStack.top()->data.getType() != "L_PAREN") {
-                    cout << operatorStack.top()->data.getName() << " ";
+                    //cout << operatorStack.top()->data.getName() << " ";
                     AST->insertSibling(new Node(operatorStack.top()->data));
                     operatorStack.pop();
                 }
                 if (!operatorStack.empty()) {
-                    operatorStack.pop();
+                    operatorStack.pop(); //pop L_PAREN
                 }
                 current = current->rightSibling;
             }
             else {
                 int currentPrecedence = opPrecedence(current->data.getType());
                 while (!operatorStack.empty() && opPrecedence(operatorStack.top()->data.getType()) >= currentPrecedence) {
-                    cout << operatorStack.top()->data.getName() << " ";
+                    //cout << operatorStack.top()->data.getName() << " ";
                     AST->insertSibling(new Node(operatorStack.top()->data));
                     operatorStack.pop();
                 }
@@ -79,7 +79,7 @@ public:
             }
         }
         while (!operatorStack.empty()) {
-            cout << operatorStack.top()->data.getName() << " ";
+            //cout << operatorStack.top()->data.getName() << " ";
             AST->insertSibling(operatorStack.top());
             operatorStack.pop();
         }
