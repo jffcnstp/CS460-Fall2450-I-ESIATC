@@ -24,6 +24,18 @@ public:
         parseExpression();
     };
 
+    int opPrecedence(const std::string &opType) {
+        if (opType == "ASSIGNMENT_OPERATOR") return 1;
+        if (opType == "BOOLEAN_OR") return 2;
+        if (opType == "BOOLEAN_AND") return 3;
+        if (opType == "BOOLEAN_EQUAL" || opType == "BOOLEAN_NOT_EQUAL" ||
+            opType == "LT" || opType == "GT" ||
+            opType == "LT_EQUAL" || opType == "GT_EQUAL") return 4;
+        if (opType == "PLUS" || opType == "MINUS") return 5;
+        if (opType == "ASTERISK" || opType == "DIVIDE") return 6;
+        return 0;
+    }
+
     void parseExpression() {
         std::stack<Node*> operatorStack;
         Node *current = CST->getCurrentNode();
@@ -32,7 +44,7 @@ public:
         bool expression = true;
         while (expression) {
             loop = false;
-            if (current->data.getType() == "SEMICOLON") {
+            if (current->rightSibling == nullptr) {
                 expression = false;
             }
             if (current->data.getType() == "IDENTIFIER" || current->data.getType() == "INTEGER" ||
@@ -42,114 +54,30 @@ public:
                 AST->insertSibling(new Node(current->data));
                 current = current->rightSibling;
             }
-            else
-            {
-                if (current->data.getType() == "L_PAREN") {
-                    operatorStack.push(current);
-                    current = current->rightSibling;
+            else if (current->data.getType() == "L_PAREN") {
+                operatorStack.push(current);
+                current = current->rightSibling;
+            }
+            else if (current->data.getType() == "R_PAREN") {
+                while (!operatorStack.empty() && operatorStack.top()->data.getType() == "L_PAREN") {
+                    cout << operatorStack.top()->data.getName() << " ";
+                    AST->insertSibling(new Node(operatorStack.top()->data));
+                    operatorStack.pop();
                 }
-                else
-                {
-                    if (current->data.getType() == "R_PAREN") {
-                        while (operatorStack.top()->data.getType() != "L_PAREN") {
-                            cout << operatorStack.top()->data.getName() << " ";
-                            AST->insertSibling(new Node(operatorStack.top()->data));
-                            operatorStack.pop();
-                        }
-                        operatorStack.pop();
-                        current = current->rightSibling;
-                    }
-                    else
-                    {
-                        if (current->data.getType() == "PLUS" || current->data.getType() == "MINUS" ||
-                            current->data.getType() == "ASTERISK" || current->data.getType() == "DIVIDE" ||
-                            current->data.getType() == "ASSIGNMENT_OPERATOR" || current->data.getType() == "LT" ||
-                            current->data.getType() == "GT" || current->data.getType() == "LT_EQUAL" ||
-                            current->data.getType() == "GT_EQUAL" || current->data.getType() == "BOOLEAN_AND" ||
-                            current->data.getType() == "BOOLEAN_OR" || current->data.getType() == "BOOLEAN_NOT" ||
-                            current->data.getType() == "BOOLEAN_EQUAL" || current->data.getType() == "BOOLEAN_NOT_EQUAL") {
-                            if (operatorStack.empty()) {
-                                operatorStack.push(current);
-                                current = current->rightSibling;
-                            }
-                            else
-                            {
-                                if (current->data.getType() == "PLUS" || current->data.getType() == "MINUS") {
-                                    loop = true;
-                                    while (loop) {
-                                        if (!operatorStack.empty()) {
-                                            if ((operatorStack.top()->data.getType() == "PLUS") || (operatorStack.top()->data.getType() == "MINUS")
-                                            || (operatorStack.top()->data.getType() == "ASTERISK") || (operatorStack.top()->data.getType() == "DIVIDE")) {
-                                                cout << operatorStack.top()->data.getName() << " ";
-                                                AST->insertSibling(operatorStack.top());
-                                                operatorStack.pop();
-                                            }
-                                            else {
-                                                operatorStack.push(current);
-                                                current = current->rightSibling;
-                                                loop = false;
-                                            }
-                                        }
-                                        else {
-                                            operatorStack.push(current);
-                                            current = current->rightSibling;
-                                            loop = false;
-                                        }
-                                    }
-                                }
-                                else {
-                                    if (current->data.getType() == "ASTERISK" || current->data.getType() == "DIVIDE") {
-                                        loop = true;
-                                        while (loop) {
-                                            if (!operatorStack.empty()) {
-                                                if ((operatorStack.top()->data.getType() == "ASTERISK") || (operatorStack.top()->data.getType() == "DIVIDE")) {
-                                                    cout << operatorStack.top()->data.getName() << " ";
-                                                    AST->insertSibling(operatorStack.top());
-                                                    operatorStack.pop();
-                                                }
-                                                else {
-                                                    operatorStack.push(current);
-                                                    current = current->rightSibling;
-                                                    loop = false;
-                                                }
-                                            }
-                                            else {
-                                                operatorStack.push(current);
-                                                current = current->rightSibling;
-                                                loop = false;
-                                            }
-                                        }
-                                    }
-                                    else {
-                                        if (current->data.getType() == "ASSIGNMENT_OPERATOR") {
-                                            loop = true;
-                                            while (loop) {
-                                                if (!operatorStack.empty()) {
-                                                    if (current->data.getType() == "PLUS" || current->data.getType() == "MINUS" ||
-                                                            current->data.getType() == "ASTERISK" || current->data.getType() == "DIVIDE") {
-                                                        cout << operatorStack.top()->data.getName() << " ";
-                                                        AST->insertSibling(operatorStack.top());
-                                                        operatorStack.pop();
-                                                    }
-                                                    else {
-                                                        operatorStack.push(current);
-                                                        current = current->rightSibling;
-                                                        loop = false;
-                                                    }
-                                                }
-                                                else {
-                                                    operatorStack.push(current);
-                                                    current = current->rightSibling;
-                                                    loop = false;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                if (!operatorStack.empty()) {
+                    operatorStack.pop();
                 }
+                current = current->rightSibling;
+            }
+            else {
+                int currentPrecedence = opPrecedence(current->data.getType());
+                while (!operatorStack.empty() && opPrecedence(operatorStack.top()->data.getType()) >= currentPrecedence) {
+                    cout << operatorStack.top()->data.getName() << " ";
+                    AST->insertSibling(new Node(operatorStack.top()->data));
+                    operatorStack.pop();
+                }
+                operatorStack.push(current);
+                current = current->rightSibling;
             }
         }
         while (!operatorStack.empty()) {
