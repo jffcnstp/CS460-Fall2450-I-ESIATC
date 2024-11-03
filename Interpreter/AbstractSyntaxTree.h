@@ -59,6 +59,7 @@ public:
             if (current->data.getType() == "IDENTIFIER" || current->data.getType() == "INTEGER" ||
                 current->data.getType() == "SINGLE_QUOTE" || current->data.getType() == "DOUBLE_QUOTE" ||
                 current->data.getType() == "STRING") {
+                cout << current->data.getName() << " ";
                 AST->insertSibling(new Node(current->data));
                 current = current->rightSibling;
             }
@@ -72,10 +73,16 @@ public:
                 {
                     if (current->data.getType() == "R_PAREN") {
                         while (operatorStack.top()->data.getType() != "L_PAREN") {
+                            if (operatorStack.empty()) {
+                                cout << "There's been a terrible accident!";
+                                exit(-1);
+                            }
+                            cout << operatorStack.top()->data.getName() << " ";
                             AST->insertSibling(new Node(operatorStack.top()->data));
                             operatorStack.pop();
                         }
                         operatorStack.pop();
+                        current = current->rightSibling;
                     }
                     else
                     {
@@ -94,6 +101,7 @@ public:
                                         if (!operatorStack.empty()) {
                                             if ((operatorStack.top()->data.getType() == "PLUS") || (operatorStack.top()->data.getType() == "MINUS")
                                             || (operatorStack.top()->data.getType() == "ASTERISK") || (operatorStack.top()->data.getType() == "DIVIDE")) {
+                                                cout << operatorStack.top()->data.getName() << " ";
                                                 AST->insertSibling(operatorStack.top());
                                                 operatorStack.pop();
                                             }
@@ -116,6 +124,7 @@ public:
                                         while (loop) {
                                             if (!operatorStack.empty()) {
                                                 if ((operatorStack.top()->data.getType() == "ASTERISK") || (operatorStack.top()->data.getType() == "DIVIDE")) {
+                                                    cout << operatorStack.top()->data.getName() << " ";
                                                     AST->insertSibling(operatorStack.top());
                                                     operatorStack.pop();
                                                 }
@@ -139,6 +148,7 @@ public:
                                                 if (!operatorStack.empty()) {
                                                     if (current->data.getType() == "PLUS" || current->data.getType() == "MINUS" ||
                                                             current->data.getType() == "ASTERISK" || current->data.getType() == "DIVIDE") {
+                                                        cout << operatorStack.top()->data.getName() << " ";
                                                         AST->insertSibling(operatorStack.top());
                                                         operatorStack.pop();
                                                     }
@@ -164,6 +174,7 @@ public:
             }
         }
         while (!operatorStack.empty()) {
+            cout << operatorStack.top()->data.getName() << " ";
             AST->insertSibling(operatorStack.top());
             operatorStack.pop();
         }
