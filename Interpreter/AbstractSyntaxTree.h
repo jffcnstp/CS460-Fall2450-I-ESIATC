@@ -34,6 +34,7 @@ public:
         return 0;
     }
 
+    //after this runs, the current node should be the child of the last token
     void parseExpression() {
         std::stack<Node*> operatorStack;
         Node *current = CST->getCurrentNode();
@@ -42,7 +43,7 @@ public:
         while (expression) {
             if (current->rightSibling == nullptr) { //end of current expression
                 expression = false;
-                current = current->rightSibling;
+                current = current->leftChild;
                 continue;
             }
             if (current->data.getType() == "IDENTIFIER" || current->data.getType() == "INTEGER" ||
