@@ -4,6 +4,7 @@
 
 #ifndef INTERPRETER_ABSTRACTSYNTAXTREE_H
 #define INTERPRETER_ABSTRACTSYNTAXTREE_H
+#include "RecursiveDescentParser.h"
 #include "string"
 #include "stack"
 
@@ -18,7 +19,10 @@ public:
     void buildAST()
     {
         CST->resetCurrentNode();
-        parseExpression();
+        parseForStatement();
+
+
+
     };
 
     int opPrecedence(const std::string &opType) {
@@ -86,12 +90,52 @@ public:
         }
     }
 
+
     //ASSUME YOUR PARSE FUNCTION ALREADY IDENTIFIED ITSELF.  AKA THE FIRST NODE OF THE SIBLING CHAIN IS IDENTIFIED
     //parseIfandWhile
     //parseFor
     //parseExpression
     //
     //
+
+    // PA5: parseForStatement();
+    // Called on top of a for statement
+    // convert this part of the for expression into post-fix maybe using external function
+    // example: for (i=0;i<something;i++); == for expression 1 i 0 = for expression 2 i something < ...
+    void parseForStatement(int forExpression = 1) {
+
+        //modify given curr node to say for expression 'x'
+        Node* currNode = CST->getCurrentNode();
+        currNode->data.type = "for expression " + to_string(forExpression);
+
+        // This will be called on the for statement,
+        // inserting for statement into AST
+        AST->insertSibling(new Node(currNode->data));
+
+        // Continue to the right of CST
+        currNode = currNode->rightSibling;
+
+        // For AST we ignore the L_PAREN token.
+        if (currNode->data.getType() == "L_PAREN") {
+            currNode = currNode->rightSibling; // go past the L_PAREN
+            parseExpression(); // Should be on top of an expression
+            parseForStatement(forExpression+=1); // Go again.
+        }
+
+        // On semicolon, insert another for statement and parse expression
+        if (currNode->data.getType() == "SEMICOLON") {
+            parseExpression();
+            currNode = currNode->rightSibling; // Go to the next expression.
+            parseForStatement(forExpression+=1); // Go again.
+        }
+
+        // end of for statement, stop here.
+        if (currNode->data.getType() == "R_PAREN") {
+            currNode = currNode->leftChild; // Go down the tree.
+        }
+
+
+    }
     void parseIfAndWhile() {
         CST->resetCurrentNode();
         Node* current = CST->getCurrentNode();
