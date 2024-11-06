@@ -92,12 +92,6 @@ public:
 
 
     //ASSUME YOUR PARSE FUNCTION ALREADY IDENTIFIED ITSELF.  AKA THE FIRST NODE OF THE SIBLING CHAIN IS IDENTIFIED
-    //parseIfandWhile
-    //parseFor
-    //parseExpression
-    //
-    //
-
     // PA5: parseForStatement();
     // Called on top of a for statement
     // convert this part of the for expression into post-fix maybe using external function
@@ -136,47 +130,53 @@ public:
 
 
     }
+
     void parseIfAndWhile() {
-        CST->resetCurrentNode();
+        CST->resetCurrentNode();  
         Node* current = CST->getCurrentNode();
         if (!current) return;
 
-        if (current->data.getType() == "if") {
-            // Create and insert the "If" node into the AST
-            Node* ifNode = new Node(Token("IF", "if", 0)); 
-            AST->insertChild(ifNode);  // Add If node to the AST
+        // Determine if it is an 'If' or 'While' statement
+        if (current->data.getType() == "IF") {
+            // Create the AST node for "If"
+            Node* ifNode = new Node(Token("IF", "if", current->data.getLine()));
+            AST->insertChild(ifNode);
 
-            // Move to the condition expression in the CST
+            // Move to the condition expression
             CST->nextNode();
             Node* conditionNode = CST->getCurrentNode();
             if (conditionNode) {
-                parseExpression();  // Parse the condition, adding to AST under the If node
+                AST->insertChild(new Node(conditionNode->data));  // Attach condition as child of If node
+                parseExpression();  // Process the condition expression
             }
 
             // Move to the body of the If statement
             CST->nextNode();
             Node* ifBodyNode = CST->getCurrentNode();
             if (ifBodyNode) {
-                parseStatementList();  // Parse the body, attaching statements to the If node
+                AST->insertSibling(new Node(ifBodyNode->data));  // Attach body as sibling of the condition node
+                parseExpression();  // Process the If body expression
             }
         } 
-        else if (current->data.getType() == "while") {
-            // Create and insert the "While" node into the AST
-            Node* whileNode = new Node(Token("WHILE", "while", 0)); 
-            AST->insertChild(whileNode);  // Add While node to the AST
+        else if (current->data.getType() == "WHILE") {
+            // Create the AST node for "While"
+            Node* whileNode = new Node(Token("WHILE", "while", current->data.getLine()));
+            AST->insertChild(whileNode);
 
-            // Move to the condition expression in the CST
+            // Move to the condition expression
             CST->nextNode();
             Node* conditionNode = CST->getCurrentNode();
             if (conditionNode) {
-                parseExpression();  // Parse the condition, adding to AST under the While node
+                AST->insertChild(new Node(conditionNode->data));  // Attach condition as child of While node
+                parseExpression();  // Process the condition expression
             }
 
             // Move to the body of the While loop
             CST->nextNode();
             Node* whileBodyNode = CST->getCurrentNode();
             if (whileBodyNode) {
-                parseStatementList();  // Parse the body, attaching statements to the While node
+                AST->insertSibling(new Node(whileBodyNode->data));  // Attach body as sibling of the condition node
+                parseExpression();  // Process the While body expression
             }
         }
     }
