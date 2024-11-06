@@ -20,7 +20,6 @@ struct Node {
 class LCRSTree {
 private:
     Node* currentNode;
-
     // Recursive helper function to delete nodes
     void deleteNode(Node* node) {
         if (!node) return;

@@ -19,8 +19,42 @@ public:
     void buildAST()
     {
         CST->resetCurrentNode();
-        parseForStatement();
-
+        Node* currentCSTNode;
+        string Nodetype;
+        while(!CST->EOT())
+        {
+            currentCSTNode=CST->getCurrentNode();
+            Nodetype=currentCSTNode->data.getType();
+            if(Nodetype=="FUNCTION" || Nodetype=="PROCEDURE" ||(Nodetype=="IDENTIFIER" && find(begin(typekeyword),end(typekeyword),currentCSTNode->data.getName()) != end(typekeyword)))
+            {
+                AST->insertChild(new Node(Token("DECLARATION","",currentCSTNode->data.getLine())));
+                CST->nextChild();
+            }
+            else if(Nodetype=="IDENTIFIER")
+            {
+                //does he parse expressions or not?
+            }
+            else if(Nodetype=="IF"|| Nodetype=="WHILE")
+            {
+                //parseifandwhile
+            }
+            else if (Nodetype=="RETURN")
+            {
+                AST->insertChild(new Node(Token("RETURN","",currentCSTNode->data.getLine())));
+                CST->nextNode();
+                parseExpression();
+            }
+            else if(Nodetype=="L_BRACE")
+            {
+                AST->insertChild(new Node(Token("BEGIN BLOCK","",currentCSTNode->data.getLine())));
+                CST->nextChild();
+            }
+            else if (Nodetype=="R_BRACE")
+            {
+                AST->insertChild(new Node(Token("END BLOCK","",currentCSTNode->data.getLine())));
+                CST->nextChild();
+            }
+        }
 
 
     };
