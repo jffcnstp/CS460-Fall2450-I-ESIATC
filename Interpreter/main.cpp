@@ -32,7 +32,7 @@ int main() {
 //        Table->printSymbolTable();
 //    }
 
-    tokenlist = Tokenize("parseExpressionTest.c");
+    tokenlist = Tokenize("forParseTest.c");
     CST= new Parser(tokenlist);
     CST->buildCST();
     cout<<"CST built successfully"<<endl;
@@ -41,8 +41,8 @@ int main() {
     Table=new SymbolTable(CST->getCST());
     Table->BuildTable();
     Table->printSymbolTable();
-    AbstractSyntaxTree expressionTestTree(CST->tree);
-    expressionTestTree.buildAST();
+    AbstractSyntaxTree forParseTestTree(CST->tree);
+    forParseTestTree.buildAST();
 
 //    int i=1;
 //    ignoreComments(fileName + std::to_string(i) + ".c", tokenizefile + std::to_string(i) + ".c");
