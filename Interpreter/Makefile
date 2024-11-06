@@ -6,7 +6,7 @@ CXXFLAGS := -std=c++17 -Wall -Wextra -O2
 
 # Sources and Headers
 SOURCES := main.cpp
-HEADERS := Token.h SymbolTable.h RecursiveDescentParser.h CommentRemove.h
+HEADERS := Token.h SymbolTable.h RecursiveDescentParser.h CommentRemove.h AbstractSyntaxTree.h
 
 # Output executable
 OUTPUT := main
