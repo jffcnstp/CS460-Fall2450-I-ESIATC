@@ -18,39 +18,23 @@ int main() {
     string tokenizefile="test_file";
     Parser *CST;
     SymbolTable *Table;
+    AbstractSyntaxTree *AST;
 
-//    for(int i=1; i < 2; i++) {
-//        ignoreComments(fileName + std::to_string(i) + ".c", tokenizefile + std::to_string(i) + ".c");
-//        tokenlist = Tokenize(tokenizefile + std::to_string(i) + ".c");
-//        CST= new Parser(tokenlist);
-//        CST->buildCST();
-//        cout<<"CST built successfully"<<endl;
-//        CST->tree->breadthFirstTraversal();
-//        CST->tree->resetCurrentNode();
-//        Table=new SymbolTable(CST->getCST());
-//        Table->BuildTable();
-//        Table->printSymbolTable();
-//    }
-
-    tokenlist = Tokenize("forParseTest.c");
-    CST= new Parser(tokenlist);
-    CST->buildCST();
-    cout<<"CST built successfully"<<endl;
-    CST->tree->breadthFirstTraversal();
-    CST->tree->resetCurrentNode();
-    Table=new SymbolTable(CST->getCST());
-    Table->BuildTable();
-    Table->printSymbolTable();
-    AbstractSyntaxTree forParseTestTree(CST->tree);
-    forParseTestTree.buildAST();
-
-//    int i=1;
-//    ignoreComments(fileName + std::to_string(i) + ".c", tokenizefile + std::to_string(i) + ".c");
-//    tokenlist = Tokenize(tokenizefile + std::to_string(i) + ".c");
-//    Parser CST(tokenlist);
-//    CST.buildCST();
-//    cout<<"CST built successfully"<<endl;
-//    CST.tree.breadthFirstTraversal();
-
+    for(int i=4; i < 6; i++) {
+        cout<<endl;
+        ignoreComments(fileName + std::to_string(i) + ".c", tokenizefile + std::to_string(i) + ".c");
+        tokenlist = Tokenize(tokenizefile + std::to_string(i) + ".c");
+        CST= new Parser(tokenlist);
+        CST->buildCST();
+        cout<<"CST built successfully"<<endl;
+        CST->tree->breadthFirstTraversal();
+        CST->tree->resetCurrentNode();
+        Table=new SymbolTable(CST->getCST());
+        Table->BuildTable();
+        AST=new AbstractSyntaxTree(CST->getCST());
+        AST->buildAST();
+        cout<<"AST built Successfully"<<endl<<endl;
+        AST->getAST()->breadthFirstTraversal();
+    }
     return 0;
 }

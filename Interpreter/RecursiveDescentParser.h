@@ -3,7 +3,7 @@
 
 std::string typekeyword[]={"int","bool","char","void"};
 std::string conditionalkeyword[]={"if","for","while","else"};
-vector<string> operandlist={"PLUS","MINUS","ASTERISK","DIVIDE","MODULO","LT_EQUAL","LT","GT_EQUAL","GT","BOOLEAN_AND","BOOLEAN_OR","BOOLEAN_NOT_EQUAL","BOOLEAN_EQUAL"};
+vector<string> operatorlist={"PLUS","MINUS","ASTERISK","DIVIDE","MODULO","LT_EQUAL","LT","GT_EQUAL","GT","BOOLEAN_AND","BOOLEAN_OR","BOOLEAN_NOT_EQUAL","BOOLEAN_EQUAL","ASSIGNMENT_OPERATOR"};
 //will need an array of reserved functions in the future
 
 enum keywords{Identifier=0,Type=1,Conditional=2,RETURN=3,Function=4};
@@ -580,7 +580,7 @@ public:
         }
 
         else if (match("WHILE")   && keywordcheck(peek().getName()) == Conditional) {
-            tree->insertSibling(new Node(peek()));
+            tree->insertChild(new Node(peek()));
             nextToken();
 
             if (match("L_PAREN")  )
@@ -758,7 +758,7 @@ public:
     }
 
 
-// hopefully handles all expressions including strings function calls operators with boolean or arithmetical operands
+// parses functions in an alternating order assuming (operator->operand->operator->operand....etc. until it hits a token not part of the format)
     void parseExpression() {
 
         bool loop=true;
@@ -820,7 +820,7 @@ public:
                 Errorstatement("ExpressionParse Operator", peek());
 
 
-            if(find(operandlist.begin(),operandlist.end(),peek().getType()) != operandlist.end()) //if the token is in operandlist
+            if(find(operatorlist.begin(),operatorlist.end(),peek().getType()) != operatorlist.end()) //if the token is in operandlist
             {
                 loop = true;
                 tree->insertSibling(new Node(peek()));
