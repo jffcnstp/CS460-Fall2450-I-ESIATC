@@ -32,8 +32,19 @@ public:
     Node* root;
 
     LCRSTree() : root(nullptr), currentNode(nullptr) {}
-
     ~LCRSTree() { deleteNode(root); }
+    /* List of Functions inside LCRSTree
+     * ----------------------------------------
+     * void insertChild(Node* child)
+     * void insertSibling(Node* sibling)
+     * Node* getCurrentNode()
+     * void resetCurrentNode()
+     * bool nextChild()
+     * void nextNode()
+     * bool EOT()
+     * void breadthFirstTraversal()
+     *
+     */
 
     // Insert child under the given parent
     void insertChild(Node* child) {
@@ -135,7 +146,31 @@ public:
     LCRSTree *tree;
 
     Parser(const std::vector<Token>& tokenList) : tokens(tokenList), current(0), tree(new LCRSTree()) {}
-
+    /*List of Functions inside Parser
+     * -----------------------------------------------
+     * Token& peek()        //returns the current token using tokens[current]
+     * Token& nextToken()   //adds 1 to current and then returns tokens[current]
+     * bool match(const string& type) //matches the type member in a Token with the string param
+     * LCRSTree* getCST()               //returns *tree
+     * int keywordcheck(string name)    //uses global arrays at the top of this header file to match against a string
+     * void buildCST()                  //DFA to build the CST stored in *tree
+     * void parseProcedure()            //subfunction of buildCST() for Procedures
+     * void parseFunctionDeclaration()  //subfunction of buildCST() for Function Declaration
+     * void parseFunctionDeclarationParameter() //subfunction of parseProcedure and parseFunctionDeclaration() handling the parameters only
+     * void parseVariableDeclaration()          //subfunction of buildCST() for Variable Declaration
+     * void parseVariableOperation()            //subfunction of buildCST() handling both variable expressions or if the variable is a function call;
+     * void parseFunctionCallParameters()       //subfunction of parseVariableOperation() and parseExpression() handles the parameter portion of a function call exclusively
+     * void parseReturn()                       //subfunction of buildCST() for handling the return statement
+     * void parseString()                       //subfunction of parseExpression() for handling strings exclusively
+     * void parseIfWhileStatement()             //subfunction of buildCST() handles IF and While statements since they have the same syntax
+     * void parseElseStatement()                //subfunction of buildCST() handles the Else statement
+     * void parseForStatement()                 //subfunction of buildCST() handles the For statement
+     * void parseBracket()                      //subfunction of parseExpression() handles Brackets [ ] exclusively
+     * void parseBrace(int &braceCounter, vector<int> &braceLocation)   //subfunction of BuildCST() handles Braces { }
+     * void parseSemicolon()                    //handles Semicolons (not consistently used might need to refactor this)
+     * void parseExpression()                   //Big kahuna handles parsing of anything that could have an expression inside i.e. standalone operation, function call parameter, logical expression in an if/while/for statement
+     * void Errorstatement(string fromwhere,Token tokenused) //function that's called if an error is caught in any of the above functions.  Exits program when resolving
+     */
     Token& peek() {
         return tokens[current];
     }

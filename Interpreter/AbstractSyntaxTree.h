@@ -13,14 +13,25 @@ class AbstractSyntaxTree {
     LCRSTree *AST;
     LCRSTree *CST;
 public:
-
+    //constructor
     AbstractSyntaxTree(LCRSTree *builtCST) {
         CST = builtCST;
         AST = new LCRSTree();
     }
+    /* List of Functions inside AbstractSyntaxTree
+     * -----------------------------------------------
+     * LCRSTree *getAST()       //returns the *AST member
+     * void buildAST()          //DFA function to build the Abstract Syntax Tree stored in *AST
+     * int opPrecedence(const std::string &opType) //function that returns an integer marking the order of precedence for operators
+     * void parseExpression()    //subfunction of buildAST() handles both mathematical and logical expressions
+     * void parseFunctionParam() //subfunction of buildAST() handles the parameters of Function calls
+     * void parseForStatement(int forExpression = 1)    //subfunction of buildAST() handles the For Statment and puts them in the AST as 3 separate For Expressions
+     * void parseIfAndWhile()   //subfunction of buildAST() handles both If and While statments as they have the same syntax
+     *
+     */
 
+    //returns the AST
     LCRSTree *getAST() { return AST; }
-
     void buildAST() {
         CST->resetCurrentNode();
         Node *currentCSTNode;

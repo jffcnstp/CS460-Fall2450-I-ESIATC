@@ -21,9 +21,9 @@ struct Symbol {
     vector<int> parametersArraySizes;
 
     Symbol *next;
-
+    //default constructor
     Symbol () : isArray(false), arraySize(0), scope (0), next(nullptr) {};
-
+    //initializer constructor
     Symbol(string name, string type, string datatype, bool isArray = false, int arraySize = 0, int scope = 0)
             : name(name), type(type), datatype(datatype), isArray(isArray), arraySize(arraySize), scope(scope), next(nullptr) {}
 };
@@ -35,6 +35,18 @@ class SymbolTable{
     LCRSTree *CST;
 public:
     SymbolTable(LCRSTree *inputtree){Root= nullptr;Tail= nullptr;Traversal= nullptr; CST=inputtree;}
+    /* list of Functions inside SymbolTable
+     * -----------------------------------------
+     * void addSymbol(Symbol *entry)    //adds a Symbol object to the Symbol Table linked list
+     * void printSymbolTable()          // prints all Symbols inside the Symbol Table()
+     * void BuildTable()                //DFA that runs through the private member CST to build the Symbol Table
+     * void populateDeclaredFunction(int currentScope)          //populates the Symbol table with a Function Declaration
+     * void populateDeclaredvariable(int currentscope)          //populates the Symbol table with a Declared Variable
+     * bool existsInTable(int currentScope, const string& name) // checks whether the Symbol already exists in Symbol Table
+     * void populateDeclaredFunctionParameter(Symbol *symbol)   //Assistant Function that directly handles the parameters inside procedures and functions
+     * void populateDeclaredProcedure(int currentScope)          // populates the Symbol Table with a Declared procedure
+     * void errorStatement(string fromwhere, int currentScope, Node* node)      //Assistant Function that prints an error statement called from one of the other functions and exits
+     * */
 
     void addSymbol(Symbol *entry)
     {
