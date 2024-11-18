@@ -125,13 +125,13 @@ public:
                 CST->nextNode();
             }
             else if (CST->getCurrentNode()->data.getType() == "SINGLE_QUOTE" || CST->getCurrentNode()->data.getType() == "DOUBLE_QUOTE") { //operand is a string
-                AST->insertSibling(new Node(CST->getCurrentNode()->data)); //insert quote
+                 //insert quote
                 CST->nextNode();
 
                 AST->insertSibling(new Node(CST->getCurrentNode()->data)); // insert string
                 CST->nextNode();
 
-                AST->insertSibling(new Node(CST->getCurrentNode()->data)); //insert end quote
+                 //insert end quote
                 CST->nextNode(); //
 
             }
