@@ -259,18 +259,18 @@ public:
     //PA6: evaluateExpression()
     //called when reaching a postfix expression in the AST
     //assumptions:
-    //  expression is part of an assignment unless otherwise indicated
+    //  expression is part of an assignment or a boolean operation
     //  the current AST node is the first operand
     //helper functions needed:
     //  operator shenanigans
     //  getArrayValue
     //  evaluateFunction
-    void evaluateExpression(bool isBool = false) {
+    void evaluateExpression() {
         bool expression = true;
-        //stack data type not final. would this be easier as a node?
-        std::stack<int> evaluateStack;
+        //stack data type is tentative. must retrieve int value or ref to symbol table from string
+        std::stack<string> evaluateStack;
         Node* currentNode = AST->getCurrentNode();
-        while (currentNode->rightSibling != nullptr) {
+        while (currentNode != nullptr) {
             //operands: identifiers. variables, functions, arrays
             if (currentNode->data.getType() == "IDENTIFIER") {
                 if (currentNode->rightSibling->data.getType() == "L_PAREN") {
@@ -280,26 +280,22 @@ public:
                     //evaluateStack.push(getArrayValue);
                 }
                 else { //if not a function or array, push on to stack
-                    evaluateStack.push(/*reference to current identifier*/);
+                    evaluateStack.push(currentNode->data.getName());
                 }
             }
             //operands: integers
             else if (currentNode->data.getType() == "INTEGER") {
-                evaluateStack.push(std::stoi(currentNode->data.getName()));
+                evaluateStack.push(currentNode->data.getName());
                 currentNode = currentNode->rightSibling;
             }
             //operators
             else if (find(operatorlist.begin(), operatorlist.end(), currentNode->data.getType()) !=
                      operatorlist.end()) {
-                int operand2 = evaluateStack.top(); evaluateStack.pop();
-                int operand1 = evaluateStack.top(); evaluateStack.pop();
-                //funny operand tedium. currentNode is the operator
-                evaluateStack.push(/*result*/);
+                //operandHelperFunction(evaluateStack); this should push the result of the operation to the stack
                 currentNode = currentNode->rightSibling;
             }
             else if (currentNode->data.getType() == "ASSIGNMENT_OPERATOR") {
-                //do i even do anything here
-                //next node is nullptr, so we're done here
+                //assign operand2's value to operand1, if operand1 exists in symbol table
             }
         }
     }
