@@ -300,6 +300,48 @@ public:
         }
     }
 
+
+
+    // Function to handle addition (+)
+    void evaluatePlus(std::stack<std::string>& operands) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for addition");
+        int b = std::stoi(operands.top()); operands.pop();
+        int a = std::stoi(operands.top()); operands.pop();
+        operands.push(std::to_string(a + b));
+    }
+    // Function to handle addition (+)
+    void evaluatePlus(std::stack<int>& operands) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for addition");
+        int b = operands.top(); operands.pop();
+        int a = operands.top(); operands.pop();
+        operands.push(a + b);
+    }
+
+    // Function to handle modulo (%)
+    void evaluateModulo(std::stack<string>& operands) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for modulo");
+        int b = std::stoi(operands.top()); operands.pop();
+        if (b == 0) throw std::runtime_error("Modulo by zero");
+        int a = std::stoi(operands.top()); operands.pop();
+        operands.push(std::to_string(a % b));
+    }
+    // Function to handle greater than (>)
+    void evaluateGreaterThan(std::stack<string>& operands) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
+        int b = std::stoi(operands.top()); operands.pop();
+        int a = std::stoi(operands.top()); operands.pop();
+        operands.push(std::to_string(a > b));
+    }
+    // Function to handle logical OR (||)
+    void evaluateLogicalOr(std::stack<string>& operands) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for logical OR");
+        int b = std::stoi(operands.top()); operands.pop();
+        int a = std::stoi(operands.top()); operands.pop();
+        operands.push(std::to_string(a || b));
+    }
+
+
+
 };
 
 #endif //INTERPRETER_ABSTRACTSYNTAXTREE_H
