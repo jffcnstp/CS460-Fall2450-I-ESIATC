@@ -307,7 +307,7 @@ public:
             evaluatePlus(evaluateStack);
         }
         else if (currentOperator == "MINUS") {
-            evaluateSubtraction(evaluateStack);
+            evaluateMinus(evaluateStack);
         }
         else if (currentOperator == "MODULO") {
             evaluateModulo(evaluateStack);
@@ -320,89 +320,100 @@ public:
         }
     }
 
-    // Function to handle addition (+)
-    void evaluatePlus(std::stack<std::string>& operands) {
+
+
+    // Helper function for the helper functions (resolves operand value in case of variables)
+    int resolveOperandValue(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+        if (operands.empty()) throw std::runtime_error("Operand stack is empty");
+        std::string top = operands.top();
+        operands.pop();
+
+        // Check if the top is a numeric literal
+        if (std::isdigit(top[0]) || (top[0] == '-' && top.size() > 1 && std::isdigit(top[1]))) {
+            return std::stoi(top);
+        }
+
+        // Otherwise, assume it's a variable
+        Symbol* symbol = symbolTable.searchSymbol(currentScope, top);
+        if (!symbol || symbol->datatype != "int" || symbol->isArray) {
+            throw std::runtime_error("Invalid variable: " + top);
+        }
+
+        // Assuming variable value is stored in name as a string
+        return std::stoi(symbol->name);
+    }
+
+    void evaluatePlus(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for addition");
-        int b = std::stoi(operands.top()); operands.pop();
-        int a = std::stoi(operands.top()); operands.pop();
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
         operands.push(std::to_string(a + b));
     }
-    // Function to handle subtraction (-)
-    void evaluateMinus(std::stack<std::string>& operands) {
+        void evaluateMinus(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for subtraction");
-        int b = std::stoi(operands.top()); operands.pop();
-        int a = std::stoi(operands.top()); operands.pop();
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
         operands.push(std::to_string(a - b));
     }
-    // Function to handle multiplication (*)
-    void evaluateMultiply(std::stack<std::string>& operands) {
+    void evaluateMultiply(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for multiplication");
-        int b = std::stoi(operands.top()); operands.pop();
-        int a = std::stoi(operands.top()); operands.pop();
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
         operands.push(std::to_string(a * b));
     }
-    // Function to handle division (/)
-    void evaluateDivision(std::stack<std::string>& operands) {
+    void evaluateDivision(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for division");
-        int b = std::stoi(operands.top()); operands.pop();
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
         if (b == 0) throw std::runtime_error("Division by zero");
-        int a = std::stoi(operands.top()); operands.pop();
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
         operands.push(std::to_string(a / b));
     }
-    // Function to handle modulo (%)
-    void evaluateModulo(std::stack<std::string>& operands) {
+    void evaluateModulo(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for modulo");
-        int b = std::stoi(operands.top()); operands.pop();
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
         if (b == 0) throw std::runtime_error("Modulo by zero");
-        int a = std::stoi(operands.top()); operands.pop();
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
         operands.push(std::to_string(a % b));
     }
-    // Function to handle less than (<)
-    void evaluateLessThan(std::stack<std::string>& operands) {
+    void evaluateLessThan(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
-        int b = std::stoi(operands.top()); operands.pop();
-        int a = std::stoi(operands.top()); operands.pop();
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
         operands.push(a < b ? "1" : "0");
     }
-    // Function to handle greater than (>)
-    void evaluateGreaterThan(std::stack<std::string>& operands) {
+    void evaluateGreaterThan(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
-        int b = std::stoi(operands.top()); operands.pop();
-        int a = std::stoi(operands.top()); operands.pop();
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
         operands.push(a > b ? "1" : "0");
     }
-    // Function to handle less than or equal (<=)
-    void evaluateLessThanOrEqual(std::stack<std::string>& operands) {
+    void evaluateLessThanOrEqual(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
-        int b = std::stoi(operands.top()); operands.pop();
-        int a = std::stoi(operands.top()); operands.pop();
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
         operands.push(a <= b ? "1" : "0");
     }
-    // Function to handle greater than or equal (>=)
-    void evaluateGreaterThanOrEqual(std::stack<std::string>& operands) {
+    void evaluateGreaterThanOrEqual(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
-        int b = std::stoi(operands.top()); operands.pop();
-        int a = std::stoi(operands.top()); operands.pop();
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
         operands.push(a >= b ? "1" : "0");
     }
-    // Function to handle logical AND (&&)
-    void evaluateLogicalAnd(std::stack<std::string>& operands) {
+    void evaluateLogicalAnd(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for logical AND");
-        int b = std::stoi(operands.top()); operands.pop();
-        int a = std::stoi(operands.top()); operands.pop();
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
         operands.push((a && b) ? "1" : "0");
     }
-    // Function to handle logical OR (||)
-    void evaluateLogicalOr(std::stack<std::string>& operands) {
+    void evaluateLogicalOr(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for logical OR");
-        int b = std::stoi(operands.top()); operands.pop();
-        int a = std::stoi(operands.top()); operands.pop();
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
         operands.push((a || b) ? "1" : "0");
     }
-    // Function to handle logical NOT (!)
-    void evaluateLogicalNot(std::stack<std::string>& operands) {
+    void evaluateLogicalNot(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
         if (operands.empty()) throw std::runtime_error("Insufficient operands for logical NOT");
-        int a = std::stoi(operands.top()); operands.pop();
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
         operands.push(!a ? "1" : "0");
     }
 
