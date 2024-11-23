@@ -265,11 +265,10 @@ public:
     //  operator shenanigans
     //  getArrayValue
     //  evaluateFunction
-    void evaluateExpression() {
+    void evaluateExpression(SymbolTable* SymbolTable, int currentScope, Node* currentNode) {
         bool expression = true;
         //stack data type is tentative. must retrieve int value or ref to symbol table from string
         std::stack<string> evaluateStack;
-        Node* currentNode = AST->getCurrentNode();
         while (currentNode != nullptr) {
             //operands: identifiers. variables, functions, arrays
             if (currentNode->data.getType() == "IDENTIFIER") {
@@ -291,16 +290,35 @@ public:
             //operators
             else if (find(operatorlist.begin(), operatorlist.end(), currentNode->data.getType()) !=
                      operatorlist.end()) {
-                //operandHelperFunction(evaluateStack); this should push the result of the operation to the stack
+                opHelperFunction(currentNode, evaluateStack);
                 currentNode = currentNode->rightSibling;
             }
             else if (currentNode->data.getType() == "ASSIGNMENT_OPERATOR") {
-                //assign operand2's value to operand1, if operand1 exists in symbol table
+                if (SymbolTable->existsInTable(evaluateStack.top())) {
+
+                }
             }
         }
     }
 
-
+    void opHelperFunction(Node* currentNode, std::stack<string> &evaluateStack) {
+        string currentOperator = currentNode->data.getType();
+        if (currentOperator == "PLUS") {
+            evaluatePlus(evaluateStack);
+        }
+        else if (currentOperator == "MINUS") {
+            evaluateSubtraction(evaluateStack);
+        }
+        else if (currentOperator == "MODULO") {
+            evaluateModulo(evaluateStack);
+        }
+        else if (currentOperator == "GT") {
+            evaluateGreaterThan(evaluateStack);
+        }
+        else if (currentOperator == "BOOLEAN_OR") {
+            evaluateLogicalOr(evaluateStack);
+        }
+    }
 
     // Function to handle addition (+)
     void evaluatePlus(std::stack<std::string>& operands) {
@@ -309,12 +327,12 @@ public:
         int a = std::stoi(operands.top()); operands.pop();
         operands.push(std::to_string(a + b));
     }
-    // Function to handle addition (+)
-    void evaluatePlus(std::stack<int>& operands) {
-        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for addition");
-        int b = operands.top(); operands.pop();
-        int a = operands.top(); operands.pop();
-        operands.push(a + b);
+    // Function to handle subtraction (+)
+    void evaluateSubtraction(std::stack<string>& operands) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for subtraction");
+        int b = std::stoi(operands.top()); operands.pop();
+        int a = std::stoi(operands.top()); operands.pop();
+        operands.push(std::to_string(a - b));
     }
 
     // Function to handle modulo (%)
