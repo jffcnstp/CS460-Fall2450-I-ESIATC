@@ -340,7 +340,6 @@ public:
             exit(-2);
         }
     }
-<<<<<<< HEAD
 
     // works the same as the function existsInTable but returns the found Symbol
     Symbol* searchSymbol(int currentScope, const string& name) {
@@ -391,9 +390,7 @@ public:
         }
     }
 
-=======
     
->>>>>>> 773c0661068415ba403a913206454c4f26f4c2c2    
 
 };
 
