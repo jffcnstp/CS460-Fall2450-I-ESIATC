@@ -7,6 +7,7 @@
 #include "RecursiveDescentParser.h"
 #include "SymbolTable.h"
 #include "AbstractSyntaxTree.h"
+#include "Interpreter.h"
 
 using namespace std;
 
