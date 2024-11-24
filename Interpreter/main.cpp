@@ -14,13 +14,13 @@ using namespace std;
 // Main function
 int main() {
     vector<Token> tokenlist;
-    string fileName ="programming_assignment_5-test_file_";
+    string fileName ="programming_assignment_6-test_file_";
     string tokenizefile="test_file";
     Parser *CST;
     SymbolTable *Table;
     AbstractSyntaxTree *AST;
 
-    for(int i=4; i < 6; i++) {
+    for(int i=1; i < 4; i++) {
         cout<<endl;
         ignoreComments(fileName + std::to_string(i) + ".c", tokenizefile + std::to_string(i) + ".c");
         tokenlist = Tokenize(tokenizefile + std::to_string(i) + ".c");
