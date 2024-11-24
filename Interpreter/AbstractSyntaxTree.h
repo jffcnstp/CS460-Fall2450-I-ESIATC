@@ -41,7 +41,14 @@ public:
             Nodetype = currentCSTNode->data.getType();
             if (Nodetype == "FUNCTION" || Nodetype == "PROCEDURE" || (Nodetype == "IDENTIFIER" && find(begin(typekeyword), end(typekeyword),currentCSTNode->data.getName()) !=end(typekeyword)))
             {
-                AST->insertChild(new Node(Token("DECLARATION", "DECLARATION", currentCSTNode->data.getLine())));
+                Node* dataextractor;
+                if(Nodetype =="FUNCTION")
+                    dataextractor=currentCSTNode->rightSibling->rightSibling;
+                else if(Nodetype == "PROCEDURE")
+                    dataextractor=currentCSTNode->rightSibling;
+                else
+                    dataextractor=currentCSTNode->rightSibling;
+                AST->insertChild(new Node(Token("DECLARATION", dataextractor->data.getName(), currentCSTNode->data.getLine())));
                 CST->nextChild();
             }
             else if (Nodetype == "IDENTIFIER")

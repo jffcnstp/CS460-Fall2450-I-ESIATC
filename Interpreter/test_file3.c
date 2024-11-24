@@ -1,52 +1,76 @@
-                                                                                                                                                            
+                                                     
+                                                     
+                                                     
 
-char announcement[2048];
+
+
+                                                                                             
+                                                                                             
+                                                                                             
+                                                                                             
+                                                                                                             
+                                                                                             
+                                                                                             
+                                                                                             
+procedure fizzbuzz (int counter)
+{
+  int state;
+
+  state = 0;
+  if ((counter % 3) == 0)
+  {
+    state = 1;
+  }
+  if ((counter % 5) == 0)
+  {
+    state = state * 2 + 2;
+  }
+  if (state == 1)
+  {
+    printf ("Fizz");
+  }
+  else
+  {
+    if (state == 2)
+    {
+      printf ("Buzz");
+    }
+    else
+    {
+      if (state == 4)
+      {
+        printf ("Fizzbuzz");
+      }
+      else
+      {
+        printf ("%d", counter);
+      }
+    }
+  }
+}
+
+
+
 
 
 procedure main (void)
 {
-  char name[100];
+  int counter;
 
-  name = 'Robert\x0';
-  announcement = "You've got mail!\x0";
-  display_announcement (name);
-}
-
-
-function bool empty_string (char string[4096])
-{
-  int i;
-  int num_bytes_before_null;
-  bool found_null;
-
-  found_null = FALSE;
-  num_bytes_before_null = 0;
-  i = 0;
-  while ((i < 4096) && (!found_null))
+  counter = 1;
+  while (counter <= 100)
   {
-    if (string[i] == '\x0')
+    fizzbuzz (counter);
+    counter = counter + 1;
+    if (counter <= 100)
     {
-      found_null = TRUE;
+      printf (", ");
     }
     else
     {
-      num_bytes_before_null = num_bytes_before_null + 1;
-    }
-    i = i + 1;
-  }
-  return (num_bytes_before_null == 0);
-}
-
-
-procedure display_announcement (char name[512])
-{
-  if (!empty_string(name))
-  {
-    printf ("Welcome, %s\n\n", name);
-    if (!empty_string(announcement))
-    {
-      printf ("%s\n", announcement);
+      printf ("\n");
     }
   }
 }
+
 
