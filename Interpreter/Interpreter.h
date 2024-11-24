@@ -99,15 +99,15 @@ public:
             }
             else if(Traversal->data.getType()=="IF")
             {
-                //evaluateIf(Traversal);
+                //evaluateIf(Traversal,functionscope);
             }
             else if(Traversal->data.getType()=="WHILE")
             {
-                //evaluateWhile(Traversal);
+                //evaluateWhile(Traversal,functionscope);
             }
             else if(Traversal->data.getType()=="FOR EXPRESSION 1")
             {
-                //evaluateFor(Traversal);
+                //evaluateFor(Traversal,functionscope);
             }
             else if(Traversal->data.getType()=="END BLOCK")
             {
