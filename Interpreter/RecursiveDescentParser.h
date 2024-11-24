@@ -289,7 +289,7 @@ public:
             {
                 cout<<number<<" ";
             }
-            exit(-1);
+            exit(31);
         }
     }
     // parses tokens expecting the syntax for procedure when the token found is PROCEDURE
@@ -774,7 +774,7 @@ public:
             if(braceCounter<0)
             {
                 cout<<"Illegal R_BRACE without accompanying L_BRACE at line:"<<peek().getLine();
-                exit(-1);
+                exit(31);
             }
             braceLocation.pop_back(); // Push to vector
             tree->insertChild(new Node(peek()));
@@ -872,7 +872,7 @@ public:
     void Errorstatement(string fromwhere,Token tokenused)
     {
         cout << fromwhere <<" error on line: " << tokenused.getLine() << " Token name: "<<tokenused.getName() <<" Token type: "<<tokenused.getType() << endl;
-        exit(-1);
+        exit(33);
     }
 
 };

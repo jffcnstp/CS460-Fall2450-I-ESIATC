@@ -25,12 +25,12 @@ void ignoreComments(const std::string& fileName, const std::string& outputName) 
 
     if (!inputFile) {
         std::cerr << "Error opening input file: " << fileName << std::endl;
-        exit(1);
+        exit(10);
     }
 
     if (!outputFile) {
         std::cerr << "Error opening output file: " << outputName << std::endl;
-        exit(1);
+        exit(10);
     }
 
     char currentChar;
@@ -131,7 +131,7 @@ void ignoreComments(const std::string& fileName, const std::string& outputName) 
                         inputFile.close();
                         outputFile.close();
                         std::cout << "ERROR: Program file "<< fileName <<" contains C-style, unterminated comment on line "<<linenum << std::endl;
-                        exit(3);
+                        exit(13);
                     }
                 else
                 {
