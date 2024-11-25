@@ -116,6 +116,73 @@ public:
             }
         }
     }
+
+    // evaluateIfStatement();
+    // This function will evaluate an if expression using a DFA, NOTE: THIS ALREADY ASSUMES IT'S CALLED ON AN IF
+    // parameters:
+    // Traversal, the node that is being traversed
+    // functionscope, an integer that helps keep track of its scope
+
+    void evaluateIfStatement(Node* Traversal, int functionscope) {
+
+        // Move to the condition node
+        Node* conditionNode = Traversal->leftChild;
+
+        // Grabbing sibling
+        Node* bodyBlock = conditionNode->rightSibling;
+
+        // Evaluates the expression past IF
+        evaluateExpression(table,functionscope,conditionNode);
+
+        bool conditionResult = conditionNode->data.getName() == "true";
+
+        // if false, do else statement and stop evaluating if.
+        if (!conditionResult) {
+            evaluateElseStatement(Traversal,functionscope);
+            traverseNext(Traversal);
+            return;
+        }
+
+        // interpret the bodyBlock
+        InterpretFunction(bodyBlock, functionscope);
+
+        // Go next
+        traverseNext(Traversal);
+    }
+
+    // evaluateElseStatement();
+    // This function will evaluate an else expression using a DFA, NOTE: THIS ALREADY ASSUMES IT'S CALLED ON AN ELSE
+    // parameters:
+    // Traversal, the node that is being traversed
+    // functionscope, an integer that helps keep track of its scope
+
+    void evaluateElseStatement(Node* Traversal, int functionscope) {
+
+        // Move to the condition node
+        Node* conditionNode = Traversal->leftChild;
+
+        // Grabbing sibling
+        Node* bodyBlock = conditionNode->rightSibling;
+
+        // Evaluates the expression past ELSE
+        evaluateExpression(table,functionscope,conditionNode);
+
+        bool conditionResult = conditionNode->data.getName() == "false";
+
+        // if true, do else statement and stop evaluating if.
+        if (!conditionResult) {
+            evaluateIfStatement(Traversal,functionscope);
+            traverseNext(Traversal);
+            return;
+        }
+
+        // interpret the bodyBlock
+        InterpretFunction(bodyBlock, functionscope);
+
+        // Go next
+        traverseNext(Traversal);
+
+    }
 };
 
 #endif //INTERPRETER_INTERPRETER_H
