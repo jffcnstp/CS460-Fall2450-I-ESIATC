@@ -118,39 +118,72 @@ public:
     }
 
 
+    // evaluateIfStatement();
+    // This function will evaluate an if expression using a DFA, NOTE: THIS ALREADY ASSUMES IT'S CALLED ON AN IF
+    // parameters:
+    // Traversal, the node that is being traversed
+    // functionscope, an integer that helps keep track of its scope
 
-    void evaluateWhile(Node* Traversal, int functionScope) {
-        // Move to the condition node (child of the WHILE node)
+    void evaluateIfStatement(Node* Traversal, int functionscope) {
+
+        // Move to the condition node
         Node* conditionNode = Traversal->leftChild;
 
-        // Get the body block node (sibling of the condition node)
+        // Grabbing sibling
         Node* bodyBlock = conditionNode->rightSibling;
 
-        // While the condition evaluates to true
-        while (true) {
-            // Evaluate the condition
-            evaluateExpression(table, functionScope, conditionNode);
+        // Evaluates the expression past IF
+        evaluateExpression(table,functionscope,conditionNode);
 
-            // Assume condition result is stored as a string in the Token data
-            bool conditionResult = conditionNode->data.getName() == "true";
+        bool conditionResult = conditionNode->data.getName() == "true";
 
-            // Break if the condition is false
-            if (!conditionResult) {
-                break;
-            }
-
-            // Interpret the body block
-            InterpretFunction(bodyBlock, functionScope);
+        // if false, do else statement and stop evaluating if.
+        if (!conditionResult) {
+            evaluateElseStatement(Traversal,functionscope);
+            traverseNext(Traversal);
+            return;
         }
 
-        // Move Traversal to the next sibling node after the "WHILE" node
+        // interpret the bodyBlock
+        InterpretFunction(bodyBlock, functionscope);
+
+        // Go next
         traverseNext(Traversal);
     }
 
+    // evaluateElseStatement();
+    // This function will evaluate an else expression using a DFA, NOTE: THIS ALREADY ASSUMES IT'S CALLED ON AN ELSE
+    // parameters:
+    // Traversal, the node that is being traversed
+    // functionscope, an integer that helps keep track of its scope
 
+    void evaluateElseStatement(Node* Traversal, int functionscope) {
 
+        // Move to the condition node
+        Node* conditionNode = Traversal->leftChild;
 
+        // Grabbing sibling
+        Node* bodyBlock = conditionNode->rightSibling;
 
+        // Evaluates the expression past ELSE
+        evaluateExpression(table,functionscope,conditionNode);
+
+        bool conditionResult = conditionNode->data.getName() == "false";
+
+        // if true, do else statement and stop evaluating if.
+        if (!conditionResult) {
+            evaluateIfStatement(Traversal,functionscope);
+            traverseNext(Traversal);
+            return;
+        }
+
+        // interpret the bodyBlock
+        InterpretFunction(bodyBlock, functionscope);
+
+        // Go next
+        traverseNext(Traversal);
+
+    }
 
 };
 
