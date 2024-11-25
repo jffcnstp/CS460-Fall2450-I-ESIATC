@@ -341,6 +341,56 @@ public:
         }
     }
 
+    // works the same as the function existsInTable but returns the found Symbol
+    Symbol* searchSymbol(int currentScope, const string& name) {
+        Symbol* currentSymbol = Root;
+
+        while (currentSymbol!= nullptr) { //loop through the entire Symbol Table
+
+            if (currentSymbol->type == "datatype") {
+                //name matches an identifier that exists in global or same scope
+                if (name == currentSymbol->name &&
+                    (currentSymbol->scope == 0 || currentSymbol->scope == currentScope)) {
+                    return currentSymbol;
+                }
+            }
+            else {
+                if(!currentSymbol->parameterNames.empty()) { //checking current CST node against current Symbol's parameters, if any
+                    for (const auto &i: currentSymbol->parameterNames) {
+                        if (name == i &&
+                            (currentSymbol->scope == 0 || currentSymbol->scope == currentScope)) {
+                            return currentSymbol;
+                        }
+                    }
+
+                }
+            }
+
+            currentSymbol = currentSymbol->next;
+        }
+
+        return nullptr;
+    }
+
+    // modifies a Symbol from the table using data from another Symbol
+    void modifySymbol(int currentScope, const string& name, const Symbol& newSymbol) {
+        Symbol* currentSymbol = searchSymbol(currentScope, name);
+
+        if (currentSymbol != nullptr) { // if currentSymbol exists in table modify it
+            currentSymbol->name = newSymbol.name;
+            currentSymbol->type = newSymbol.type;
+            currentSymbol->datatype = newSymbol.datatype;
+            currentSymbol->isArray = newSymbol.isArray;
+            currentSymbol->arraySize = newSymbol.arraySize;
+
+            currentSymbol->parameterNames = newSymbol.parameterNames;
+            currentSymbol->parameterDatatypes = newSymbol.parameterDatatypes;
+            currentSymbol->isParameterArray = newSymbol.isParameterArray;
+            currentSymbol->parametersArraySizes = newSymbol.parametersArraySizes;
+        }
+    }
+
+    
 
 };
 

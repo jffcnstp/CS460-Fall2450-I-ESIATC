@@ -103,7 +103,7 @@ public:
             }
             else if(Traversal->data.getType()=="WHILE")
             {
-                //evaluateWhile(Traversal,functionscope);
+                evaluateWhile(Traversal,functionscope);
             }
             else if(Traversal->data.getType()=="FOR EXPRESSION 1")
             {
@@ -116,6 +116,7 @@ public:
             }
         }
     }
+
 
     // evaluateIfStatement();
     // This function will evaluate an if expression using a DFA, NOTE: THIS ALREADY ASSUMES IT'S CALLED ON AN IF
@@ -183,6 +184,7 @@ public:
         traverseNext(Traversal);
 
     }
+
 };
 
 #endif //INTERPRETER_INTERPRETER_H
