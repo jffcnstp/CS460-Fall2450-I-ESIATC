@@ -87,7 +87,7 @@ vector<Token> Tokenize(const string& fileName) {
                 if (isalpha(currentChar)) {
                     cout << "Syntax error on line " << linenumber << ": invalid integer";
                     inputFile.close();
-                    exit(3);
+                    exit(23);
                 } else {
                     tokenlist.emplace_back("INTEGER", intname,linenumber);
                     inputFile.unget();
@@ -198,7 +198,7 @@ vector<Token> Tokenize(const string& fileName) {
                 {
                     inputFile.close();
                     std::cout<<"syntax error at line "<<linenumber<<": incomplete BOOLEAN_AND"<<std::endl;
-                    exit(4);
+                    exit(24);
                 }
                 break;
             }
@@ -211,7 +211,7 @@ vector<Token> Tokenize(const string& fileName) {
                 {
                     inputFile.close();
                     std::cout<<"syntax error at line "<<linenumber<<": incomplete BOOLEAN_OR"<<std::endl;
-                    exit(4);
+                    exit(24);
                 }
                 break;
             }

@@ -212,7 +212,7 @@ public:
         else
         {
             cout<<"THERE IS SUPPOSED TO BE A SEMICOLON HERE.  INSTEAD IT'S A "<<CST->getCurrentNode()->data.getName() <<" TOKEN ON LINE: "<<CST->getCurrentNode()->data.getLine();
-            exit(-2);
+            exit(41);
         }
     }
 
@@ -224,7 +224,7 @@ public:
     void errorStatement(string fromwhere, int currentScope, Node* node) {
         cout << fromwhere << " error with " << " Scope was: "
         << currentScope << " variable was: " << node->data.getType()<<" "<<node->data.getName()<<" on line "<<node->data.getLine() << endl;
-        exit(-1);
+        exit(41);
     }
 
     //checks if an identifier exists within the symbol table
@@ -342,7 +342,7 @@ public:
             cout << "THERE IS SUPPOSED TO BE A RIGHT PARENTHESIS HERE.  INSTEAD IT'S A "
                  << CST->getCurrentNode()->data.getName() << " TOKEN ON LINE: "
                  << CST->getCurrentNode()->data.getLine();
-            exit(-2);
+            exit(41);
         }
     }
 
@@ -419,6 +419,7 @@ public:
         cerr << "Error: Symbol " << name << " not found in scope " << currentScope << endl;
         return "";
     }
+
 
     string getDatatype(int currentScope, const string& name) {
         Symbol* currentSymbol = searchSymbol(currentScope, name);
@@ -537,6 +538,7 @@ public:
         }
         cerr << "Error: Symbol " << name << " not found in scope " << currentScope << endl;
     }
+
 
 };
 
