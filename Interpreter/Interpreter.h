@@ -185,6 +185,40 @@ public:
 
     }
 
+
+    void evaluateWhile(Node* Traversal, int functionScope) {
+        // Move to the condition node (child of the WHILE node)
+        Node* conditionNode = Traversal->leftChild;
+
+        // Get the body block node (sibling of the condition node)
+        Node* bodyBlock = conditionNode->rightSibling;
+
+        // While the condition evaluates to true
+        while (true) {
+            // Evaluate the condition
+            evaluateExpression(table, functionScope, conditionNode);
+
+            // Assume condition result is stored as a string in the Token data
+            bool conditionResult = conditionNode->data.getName() == "true";
+
+            // Break if the condition is false
+            if (!conditionResult) {
+                break;
+            }
+
+            // Interpret the body block
+            InterpretFunction(bodyBlock, functionScope);
+        }
+
+        // Move Traversal to the next sibling node after the "WHILE" node
+        traverseNext(Traversal);
+    }
+
+
+
+
+
+
 };
 
 #endif //INTERPRETER_INTERPRETER_H
