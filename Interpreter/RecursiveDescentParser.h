@@ -75,7 +75,9 @@ public:
     Node* getCurrentNode() {
         return currentNode;
     }
-
+    void setCurrentNode(Node* newposition){
+        currentNode=newposition;
+    }
     void resetCurrentNode(){
         currentNode=root;
     }

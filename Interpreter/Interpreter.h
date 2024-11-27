@@ -13,6 +13,7 @@ using namespace std;
 
 class Interpreter
 {
+    stack<Node*> progcounter;
     SymbolTable* table;
     LCRSTree *AST;
 public:
@@ -35,20 +36,21 @@ public:
 
     void startInterpreter()
     {
-        findProcedure("main",vector<string>(0));
+        AST->resetCurrentNode();
+        findProcedure("main"); //traverses AST until it finds main
+        InterpretFunction(table->searchSymbol("main")->scope);
     }
-    void findProcedure(string procedurename,vector<string> datavalues)
+    void findProcedure(string procedurename)
     {
-        Node* TraversingNode=AST->root;
+        AST->resetCurrentNode();
         Symbol* Symbolstorage;
-        while(TraversingNode->data.getName()!=procedurename)
+        while(AST->getCurrentNode()->data.getName()!=procedurename)
         {
-            traverseToChild(TraversingNode);
+           AST->nextChild();
         }
-        if(TraversingNode->data.getName()==procedurename)
+        if(AST->getCurrentNode()->data.getName()==procedurename)
         {
-            //Symbolstorage=table->searchSymbol(procedurename) Find the function in symboltable and retrieve it
-            // InterpretFunction(TraversingNode,Symbolstorage->scope); Start interpreting the Function since it is at the correct node and we have the scope for its variables
+            return;
         }
         else
         {
@@ -57,62 +59,103 @@ public:
         }
 
     }
-
-    //Moves the Parameter Node* to the next Child
-    void traverseToChild(Node* TraversingNode)
-    {
-        while(TraversingNode->rightSibling)
-        {
-            TraversingNode=TraversingNode->rightSibling;
-        }
-        TraversingNode=TraversingNode->leftChild;
-    }
-    // Moves the Parameter Node* to the next Node
-    void traverseNext(Node* TraversingNode)
-    {
-        if(TraversingNode->rightSibling)
-            TraversingNode=TraversingNode->rightSibling;
-        else
-            TraversingNode=TraversingNode->leftChild;
-    }
+    
 
     //These are individual DFAs that will appear PER function
-    void InterpretFunction(Node* Traversal,int functionscope)
+    void InterpretFunction(int functionscope)
     {
-        int scopeblock=0;
-        traverseToChild(Traversal); //currently on function declaration.  Should traverse twice to go inside the block
-        if(Traversal->data.getType() != "BEGIN BLOCK") {
-            cout << "Function misalignment error instead it's: "<<Traversal->data.getType();
+        bool withinscope=true;
+        bool inloop=false;
+        int localscope=0;
+
+        AST->nextChild(); //currently on function declaration.  Should traverse twice to go inside the block
+        if(AST->getCurrentNode()->data.getType() != "BEGIN BLOCK") {
+            cout << "Function misalignment error instead it's: "<<AST->getCurrentNode()->data.getType();
             exit(62);
         }
-        traverseToChild(Traversal);
+        AST->nextChild();
         //Begin DFA
-        while(scopeblock !=-1)
+        while(withinscope)
         {
-            if(Traversal->data.getType()=="DECLARATION")
+            if(AST->getCurrentNode()->data.getType()=="DECLARATION")
             {
-                traverseToChild(Traversal);
+                AST->nextChild();
             }
-            else if(Traversal->data.getType()=="ASSIGNMENT")
+            else if(AST->getCurrentNode()->data.getType()=="ASSIGNMENT")
             {
-                //evaluatePostfix(Traversal,functionscope)
+                //evaluateExpression()
             }
-            else if(Traversal->data.getType()=="IF")
+            else if(AST->getCurrentNode()->data.getType()=="IF")
             {
-                //evaluateIf(Traversal,functionscope);
+                /*if(!evaluateIf(functionscope))
+                 * AST->nextChild(); //go past Beginblock
+                 * AST->nextChild();
+                 *  int withinscope=1
+                 *  while(withinscope !=0)
+                 *  {
+                 *      if(AST->getCurrentNode()->data.getTYpe()=="BEGIN BLOCK"
+                 *          withinscope+=1;
+                 *      if(AST->getCurrentNode()->data.getType()=="END BLOCK"
+                 *          withinscope-=1;
+                 *      AST->nextchild();
+                   }
+                 AST->nextChild()
+                 if(AST->getCurrentNode()->data.getType()=="ELSE")
+                    AST->nextChild();
+                    */
             }
-            else if(Traversal->data.getType()=="WHILE")
+            else if(AST->getCurrentNode()->data.getType()=="ELSE") // we hit an else but we did the IF
             {
-                evaluateWhile(Traversal,functionscope);
+                traverseConditionalBlock();
             }
-            else if(Traversal->data.getType()=="FOR EXPRESSION 1")
+            else if(AST->getCurrentNode()->data.getType()=="WHILE")
             {
-                //evaluateFor(Traversal,functionscope);
+                progcounter.push(AST->getCurrentNode());
+                if(evaluateWhile(functionscope))
+                {
+                    inloop=true;
+                    localscope=0;
+                }
+                else
+                {
+                    inloop=false;
+                    traverseConditionalBlock();
+                    progcounter.pop();
+                }
             }
-            else if(Traversal->data.getType()=="END BLOCK")
+            else if(AST->getCurrentNode()->data.getType()=="FOR EXPRESSION 1")
             {
-                scopeblock-=1;
-                traverseToChild(Traversal);
+                progcounter.push(AST->getCurrentNode());
+                if(evaluateFor(functionscope,inloop)) //evaluate whether we've gone through the first loop
+                {
+                    inloop=true;
+                    localscope=0;
+                }
+                else
+                {
+                    inloop=false;
+                    traverseConditionalBlock();
+                    progcounter.pop();
+                }
+            }
+            else if(AST->getCurrentNode()->data.getType()=="BEGIN BLOCK")
+            {
+                if(inloop==true)
+                    localscope+=1;
+            }
+            else if(AST->getCurrentNode()->data.getType()=="END BLOCK") {
+
+                if (inloop == true) {
+                    localscope -= 1;
+                    if(localscope==0)
+                    {
+                        AST->setCurrentNode(progcounter.top());
+                    }
+                }
+            }
+            else if(AST->getCurrentNode()->data.getType()=="RETURN")
+            {
+               // evaluateExpression()
             }
         }
     }
@@ -183,6 +226,196 @@ public:
         // Go next
         traverseNext(Traversal);
 
+    }
+
+    //PA6: evaluateExpression()
+    //called when reaching a postfix expression in the AST
+    //assumptions:
+    //  expression is part of an assignment or a boolean operation
+    //  the current AST node is the first operand
+    //helper functions needed:
+    //  operator shenanigans
+    //  getArrayValue
+    //  evaluateFunction
+    void evaluateExpression(SymbolTable* SymbolTable, int currentScope, Node* currentNode) {
+        bool expression = true;
+        //stack data type is tentative. must retrieve int value or ref to symbol table from string
+        std::stack<string> evaluateStack;
+        while (currentNode != nullptr) {
+            //operands: identifiers. variables, functions, arrays
+            if (currentNode->data.getType() == "IDENTIFIER") {
+                if (currentNode->rightSibling->data.getType() == "L_PAREN") {
+                    //string funcname=AST->getCurrentNode()->data.getName(); save the name of the function somewhere.
+                    //vector<string?> data = evaluatefunction() -> should return the parameter data in a vector.  The Node position should either be on R_PAREN or next operand
+
+                    //progcounter.push(AST->getCurrentNode());  push the position onto the progcounter stack
+                    //findprocedure(funcname) moves the AST to where the function is in the AST
+
+                    //Symbol* localsymbol = searchSymbol(funcname) Calling the symbol to a local place because we need to set the parameter values before actually entering the function DFA
+                    //Set the symbols parameter data with the local vector we have
+
+                    //Interpretfunction(funcname);  //DFA goes through the function
+                    //AST->setCurrentNode(progcounter.top()) //set the CurrentNode back to the middle of the expression
+                    //progcounter.pop()  // pop the stack since we don't need that node position anymore
+
+                    //evaluateStack.push(searchSymbol("functionname")->data); //when the DFA finishes it should have pushed a value to its data field
+                }
+                else if (currentNode->rightSibling->data.getType() == "L_BRACE") {
+                    //evaluateStack.push(getArrayValue);
+                }
+                else { //if not a function or array, push on to stack
+                    evaluateStack.push(currentNode->data.getName());
+                }
+            }
+                //operands: integers
+            else if (currentNode->data.getType() == "INTEGER") {
+                evaluateStack.push(currentNode->data.getName());
+                currentNode = currentNode->rightSibling;
+            }
+                //operators
+            else if (find(operatorlist.begin(), operatorlist.end(), currentNode->data.getType()) !=
+                     operatorlist.end()) {
+                opHelperFunction(currentNode, evaluateStack);
+                currentNode = currentNode->rightSibling;
+            }
+            else if (currentNode->data.getType() == "ASSIGNMENT_OPERATOR") {
+                if (SymbolTable->existsInTable(evaluateStack.top())) {
+
+                }
+            }
+        }
+    }
+
+    void opHelperFunction(Node* currentNode, std::stack<string> &evaluateStack) {
+        string currentOperator = currentNode->data.getType();
+        if (currentOperator == "PLUS") {
+            evaluatePlus(evaluateStack);
+        }
+        else if (currentOperator == "MINUS") {
+            evaluateMinus(evaluateStack);
+        }
+        else if (currentOperator == "MODULO") {
+            evaluateModulo(evaluateStack);
+        }
+        else if (currentOperator == "GT") {
+            evaluateGreaterThan(evaluateStack);
+        }
+        else if (currentOperator == "BOOLEAN_OR") {
+            evaluateLogicalOr(evaluateStack);
+        }
+    }
+
+
+
+    // Helper function for the helper functions (resolves operand value in case of variables)
+    int resolveOperandValue(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+        if (operands.empty()) throw std::runtime_error("Operand stack is empty");
+        std::string top = operands.top();
+        operands.pop();
+
+        // Check if the top is a numeric literal
+        if (std::isdigit(top[0]) || (top[0] == '-' && top.size() > 1 && std::isdigit(top[1]))) {
+            return std::stoi(top);
+        }
+
+        // Otherwise, assume it's a variable
+        Symbol* symbol = symbolTable.searchSymbol(currentScope, top);
+        if (!symbol || symbol->datatype != "int" || symbol->isArray) {
+            throw std::runtime_error("Invalid variable: " + top);
+        }
+
+        // Assuming variable value is stored in name as a string
+        return std::stoi(symbol->name);
+    }
+
+    void evaluatePlus(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for addition");
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
+        operands.push(std::to_string(a + b));
+    }
+    void evaluateMinus(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for subtraction");
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
+        operands.push(std::to_string(a - b));
+    }
+    void evaluateMultiply(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for multiplication");
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
+        operands.push(std::to_string(a * b));
+    }
+    void evaluateDivision(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for division");
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        if (b == 0) throw std::runtime_error("Division by zero");
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
+        operands.push(std::to_string(a / b));
+    }
+    void evaluateModulo(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for modulo");
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        if (b == 0) throw std::runtime_error("Modulo by zero");
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
+        operands.push(std::to_string(a % b));
+    }
+    void evaluateLessThan(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
+        operands.push(a < b ? "1" : "0");
+    }
+    void evaluateGreaterThan(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
+        operands.push(a > b ? "1" : "0");
+    }
+    void evaluateLessThanOrEqual(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
+        operands.push(a <= b ? "1" : "0");
+    }
+    void evaluateGreaterThanOrEqual(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
+        operands.push(a >= b ? "1" : "0");
+    }
+    void evaluateLogicalAnd(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for logical AND");
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
+        operands.push((a && b) ? "1" : "0");
+    }
+    void evaluateLogicalOr(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for logical OR");
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
+        operands.push((a || b) ? "1" : "0");
+    }
+    void evaluateLogicalNot(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+        if (operands.empty()) throw std::runtime_error("Insufficient operands for logical NOT");
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
+        operands.push(!a ? "1" : "0");
+    }
+
+    void traverseConditionalBlock()
+    {
+        int localscope=1;
+        AST->nextChild();
+        AST->nextChild();//move past BEGIN BLOCK
+        while(localscope != 0)
+        {
+            if(AST->getCurrentNode()->data.getType()=="BEGIN BLOCK")
+                localscope+=1;
+            if(AST->getCurrentNode()->data.getType()=="END BLOCK")
+                localscope-=1;
+            AST->nextChild();
+        }
+        AST->nextChild();//should move from END BLOCK to next child
     }
 
 };
