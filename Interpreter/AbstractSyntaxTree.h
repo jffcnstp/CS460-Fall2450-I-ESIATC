@@ -273,10 +273,10 @@ public:
     //  operator shenanigans
     //  getArrayValue
     //  evaluateFunction
-    void evaluateExpression(SymbolTable* SymbolTable, int currentScope, Node* currentNode) {
+    Value evaluateExpression(SymbolTable* SymbolTable, int currentScope) {
+        Node* currentNode = AST->getCurrentNode();
         bool expression = true;
-        //stack data type is tentative. must retrieve int value or ref to symbol table from string
-        std::stack<string> evaluateStack;
+        std::stack<Node*> evaluateStack;
         while (currentNode != nullptr) {
             //operands: identifiers. variables, functions, arrays
             if (currentNode->data.getType() == "IDENTIFIER") {
@@ -287,12 +287,12 @@ public:
                     //evaluateStack.push(getArrayValue);
                 }
                 else { //if not a function or array, push on to stack
-                    evaluateStack.push(currentNode->data.getName());
+                    evaluateStack.push(currentNode);
                 }
             }
                 //operands: integers
             else if (currentNode->data.getType() == "INTEGER") {
-                evaluateStack.push(currentNode->data.getName());
+                evaluateStack.push(currentNode);
                 currentNode = currentNode->rightSibling;
             }
                 //operators
@@ -301,9 +301,40 @@ public:
                 opHelperFunction(currentNode, evaluateStack);
                 currentNode = currentNode->rightSibling;
             }
+            //assignment operator: end of expression
             else if (currentNode->data.getType() == "ASSIGNMENT_OPERATOR") {
-                if (SymbolTable->existsInTable(evaluateStack.top())) {
-
+                Symbol* op1Symbol;
+                Symbol* op2Symbol;
+                Value operand2, operand1;
+                if (evaluateStack.top()->data.getType() == "IDENTIFIER" &&
+                    SymbolTable->existsInTable(currentScope, evaluateStack.top()->data.getName())) {
+                    op2Symbol = SymbolTable->searchSymbol(currentScope, evaluateStack.top()->data.getName());
+                    operand2 = op2Symbol->value;
+                    evaluateStack.pop();
+                }
+                else if (evaluateStack.top()->data.getType() == "INTEGER") {
+                    operand2 = evaluateStack.top()->data.getName();
+                } else {
+                    std::cerr << "Error: operand2 is missing or something idk" << std::endl;
+                    exit(-1);
+                }
+                if (evaluateStack.top()->data.getType() == "IDENTIFIER" &&
+                    SymbolTable->existsInTable(currentScope, evaluateStack.top()->data.getName())) {
+                    op1Symbol = SymbolTable->searchSymbol(currentScope, evaluateStack.top()->data.getName());
+                    operand1 = op1Symbol->value;
+                    evaluateStack.pop();
+                }
+                else {
+                    std::cerr << "Error: attempting to assign value to non-variable" << std::endl;
+                    exit(-1);
+                }
+                if (std::get_if<int>(&operand2) && std::get_if<int>(&operand1)) {
+                    operand1 = operand2;
+                    SymbolTable->setValue(currentScope, op1Symbol->name, operand1);
+                    return operand1;
+                } else {
+                    std::cerr << "Assignment error: one or both operands are not valid types" << std::endl;
+                    exit(-1);
                 }
             }
         }
