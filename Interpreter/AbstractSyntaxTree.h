@@ -377,6 +377,8 @@ public:
                 }
             }
         }
+        std::cerr << "evaluateExpression: Reached end of expression without returning a final result" << std::endl;
+        exit(-1);
     }
 
     void opHelperFunction(Node* currentNode, std::stack<Node*> &evaluateStack,
