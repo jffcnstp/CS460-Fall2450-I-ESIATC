@@ -263,19 +263,52 @@ public:
 
     }
 
+    //PA6: evaluateBoolExpression()
+    //called within an if, while, or for expression
+    bool evaluateBoolExpression(SymbolTable* SymbolTable, int currentScope) {
+        Node* currentNode = AST->getCurrentNode();
+        std::stack<Node*> evaluateStack;
+        while (currentNode != nullptr) {
+            if (currentNode->data.getType() == "IDENTIFIER" ||
+                currentNode->data.getType() == "INTEGER") {
+                evaluateStack.push(currentNode);
+                currentNode = currentNode->rightSibling;
+            }
+            else if (currentNode->data.getType() == "SINGLE_QUOTE") {
+                currentNode = currentNode->rightSibling;
+                evaluateStack.push(currentNode);
+                currentNode = currentNode->rightSibling;
+            }
+            else if (find(operatorlist.begin(), operatorlist.end(), currentNode->data.getType()) !=
+                     operatorlist.end()) {
+                opHelperFunction(currentNode, evaluateStack, SymbolTable, currentScope);
+                currentNode = currentNode->rightSibling;
+            }
+        }
+        if (evaluateStack.size() != 1) {
+            std::cerr << "evaluateBoolExpression: evaluateStack should contain a single node, but doesn't" << std::endl;
+            exit(-1);
+        }
+        else if (evaluateStack.top()->data.getName() != "1" ||
+                evaluateStack.top()->data.getName() != "0") {
+            std::cerr << "evaluateBoolExpression: final result is not a boolean value" << std::endl;
+            exit(-1);
+        }
+        else {
+            return evaluateStack.top();
+        }
+    }
 
     //PA6: evaluateExpression()
     //called when reaching a postfix expression in the AST
     //assumptions:
-    //  expression is part of an assignment or a boolean operation
+    //  expression is a numerical expression
     //  the current AST node is the first operand
     //helper functions needed:
-    //  operator shenanigans
     //  getArrayValue
     //  evaluateFunction
     Value evaluateExpression(SymbolTable* SymbolTable, int currentScope) {
         Node* currentNode = AST->getCurrentNode();
-        bool expression = true;
         std::stack<Node*> evaluateStack;
         while (currentNode != nullptr) {
             //operands: identifiers. variables, functions, arrays
@@ -290,6 +323,12 @@ public:
                     evaluateStack.push(currentNode);
                 }
             }
+            //operands: surrounded by single quotes
+            else if (currentNode->data.getType() == "SINGLE_QUOTE") {
+                currentNode = currentNode->rightSibling;
+                evaluateStack.push(currentNode);
+                currentNode = currentNode->rightSibling;
+            }
                 //operands: integers
             else if (currentNode->data.getType() == "INTEGER") {
                 evaluateStack.push(currentNode);
@@ -298,7 +337,7 @@ public:
                 //operators
             else if (find(operatorlist.begin(), operatorlist.end(), currentNode->data.getType()) !=
                      operatorlist.end()) {
-                opHelperFunction(currentNode, evaluateStack);
+                opHelperFunction(currentNode, evaluateStack, SymbolTable, currentScope);
                 currentNode = currentNode->rightSibling;
             }
             //assignment operator: end of expression
@@ -313,7 +352,7 @@ public:
                     evaluateStack.pop();
                 }
                 else if (evaluateStack.top()->data.getType() == "INTEGER") {
-                    operand2 = evaluateStack.top()->data.getName();
+                    operand2 = std::stoi(evaluateStack.top()->data.getName());
                 } else {
                     std::cerr << "Error: operand2 is missing or something idk" << std::endl;
                     exit(-1);
@@ -340,120 +379,181 @@ public:
         }
     }
 
-    void opHelperFunction(Node* currentNode, std::stack<string> &evaluateStack) {
+    void opHelperFunction(Node* currentNode, std::stack<Node*> &evaluateStack,
+                          SymbolTable *SymbolTable, int currentScope) {
         string currentOperator = currentNode->data.getType();
         if (currentOperator == "PLUS") {
-            evaluatePlus(evaluateStack);
+            evaluatePlus(evaluateStack, currentScope, SymbolTable);
         }
         else if (currentOperator == "MINUS") {
-            evaluateMinus(evaluateStack);
+            evaluateMinus(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "ASTERISK") {
+            evaluateMultiply(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "DIVIDE") {
+            evaluateDivision(evaluateStack, currentScope, SymbolTable);
         }
         else if (currentOperator == "MODULO") {
-            evaluateModulo(evaluateStack);
+            evaluateModulo(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "LT_EQUAL") {
+            evaluateLessThanOrEqual(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "LT") {
+            evaluateLessThan(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "GT_EQUAL") {
+            evaluateGreaterThanOrEqual(evaluateStack, currentScope, SymbolTable);
         }
         else if (currentOperator == "GT") {
-            evaluateGreaterThan(evaluateStack);
+            evaluateGreaterThan(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "BOOLEAN_AND") {
+            evaluateLogicalAnd(evaluateStack, currentScope, SymbolTable);
         }
         else if (currentOperator == "BOOLEAN_OR") {
-            evaluateLogicalOr(evaluateStack);
+            evaluateLogicalOr(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "BOOLEAN_NOT_EQUAL") {
+            evaluateLogicalNot(evaluateStack, currentScope, SymbolTable);
+        }
+        else {
+            std::cerr << "opHelperFunction: not an operator" << std::endl;
+            exit(-1);
         }
     }
 
 
 
     // Helper function for the helper functions (resolves operand value in case of variables)
-    int resolveOperandValue(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    int resolveOperandValue(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.empty()) throw std::runtime_error("Operand stack is empty");
-        std::string top = operands.top();
+        Node* top = operands.top();
         operands.pop();
-
-        // Check if the top is a numeric literal
-        if (std::isdigit(top[0]) || (top[0] == '-' && top.size() > 1 && std::isdigit(top[1]))) {
-            return std::stoi(top);
+        
+        if (top->data.getType() == "INTEGER") {
+            return std::stoi(top->data.getName());
         }
 
         // Otherwise, assume it's a variable
-        Symbol* symbol = symbolTable.searchSymbol(currentScope, top);
+        Symbol* symbol = symbolTable->searchSymbol(currentScope, top->data.getName());
         if (!symbol || symbol->datatype != "int" || symbol->isArray) {
-            throw std::runtime_error("Invalid variable: " + top);
+            throw std::runtime_error("Invalid variable: " + top->data.getName());
         }
 
         // Assuming variable value is stored in name as a string
         return std::stoi(symbol->name);
     }
 
-    void evaluatePlus(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluatePlus(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for addition");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(std::to_string(a + b));
+        Node* result;
+        result->data.name = std::to_string(a + b);
+        result->data.type = "INTEGER";
+        operands.push(result);
     }
-    void evaluateMinus(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateMinus(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for subtraction");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(std::to_string(a - b));
+        Node* result;
+        result->data.name = std::to_string(a - b);
+        result->data.type = "INTEGER";
+        operands.push(result);
     }
-    void evaluateMultiply(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateMultiply(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for multiplication");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(std::to_string(a * b));
+        Node* result;
+        result->data.name = std::to_string(a * b);
+        result->data.type = "INTEGER";
+        operands.push(result);
     }
-    void evaluateDivision(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateDivision(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for division");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         if (b == 0) throw std::runtime_error("Division by zero");
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(std::to_string(a / b));
+        Node* result;
+        result->data.name = std::to_string(a / b);
+        result->data.type = "INTEGER";
+        operands.push(result);
     }
-    void evaluateModulo(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateModulo(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for modulo");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         if (b == 0) throw std::runtime_error("Modulo by zero");
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(std::to_string(a % b));
+        Node* result;
+        result->data.name = std::to_string(a % b);
+        result->data.type = "INTEGER";
+        operands.push(result);
     }
-    void evaluateLessThan(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateLessThan(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(a < b ? "1" : "0");
+        Node* result;
+        result->data.name = (a < b) ? "1" : "0";
+        result->data.type = "INTEGER";
+        operands.push(result);
     }
-    void evaluateGreaterThan(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateGreaterThan(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(a > b ? "1" : "0");
+        Node* result;
+        result->data.name = (a > b) ? "1" : "0";
+        result->data.type = "INTEGER";
+        operands.push(result);
     }
-    void evaluateLessThanOrEqual(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateLessThanOrEqual(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(a <= b ? "1" : "0");
+        Node* result;
+        result->data.name = (a <= b) ? "1" : "0";
+        result->data.type = "INTEGER";
+        operands.push(result);
     }
-    void evaluateGreaterThanOrEqual(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateGreaterThanOrEqual(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(a >= b ? "1" : "0");
+        Node* result;
+        result->data.name = (a >= b) ? "1" : "0";
+        result->data.type = "INTEGER";
+        operands.push(result);
     }
-    void evaluateLogicalAnd(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateLogicalAnd(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for logical AND");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push((a && b) ? "1" : "0");
+        Node* result;
+        result->data.name = (a && b) ? "1" : "0";
+        result->data.type = "INTEGER";
+        operands.push(result);
     }
-    void evaluateLogicalOr(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateLogicalOr(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for logical OR");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push((a || b) ? "1" : "0");
+        Node* result;
+        result->data.name = (a || b) ? "1" : "0";
+        result->data.type = "INTEGER";
+        operands.push(result);
     }
-    void evaluateLogicalNot(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateLogicalNot(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.empty()) throw std::runtime_error("Insufficient operands for logical NOT");
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(!a ? "1" : "0");
+        Node* result;
+        result->data.name = !a ? "1" : "0";
+        result->data.type = "INTEGER";
+        operands.push(result);
     }
 
 
