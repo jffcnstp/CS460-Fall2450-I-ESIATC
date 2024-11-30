@@ -452,27 +452,21 @@ public:
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for addition");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        Node* result;
-        result->data.name = std::to_string(a + b);
-        result->data.type = "INTEGER";
+        Node* result = new Node(Token("INTEGER", std::to_string(a + b), 0));
         operands.push(result);
     }
     void evaluateMinus(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for subtraction");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        Node* result;
-        result->data.name = std::to_string(a - b);
-        result->data.type = "INTEGER";
+        Node* result = new Node(Token("INTEGER", std::to_string(a - b), 0));
         operands.push(result);
     }
     void evaluateMultiply(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for multiplication");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        Node* result;
-        result->data.name = std::to_string(a * b);
-        result->data.type = "INTEGER";
+        Node* result = new Node(Token("INTEGER", std::to_string(a * b), 0));
         operands.push(result);
     }
     void evaluateDivision(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
@@ -480,9 +474,7 @@ public:
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         if (b == 0) throw std::runtime_error("Division by zero");
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        Node* result;
-        result->data.name = std::to_string(a / b);
-        result->data.type = "INTEGER";
+        Node* result = new Node(Token("INTEGER", std::to_string(a / b), 0));
         operands.push(result);
     }
     void evaluateModulo(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
@@ -490,71 +482,55 @@ public:
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         if (b == 0) throw std::runtime_error("Modulo by zero");
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        Node* result;
-        result->data.name = std::to_string(a % b);
-        result->data.type = "INTEGER";
+        Node* result = new Node(Token("INTEGER", std::to_string(a % b), 0));
         operands.push(result);
     }
     void evaluateLessThan(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        Node* result;
-        result->data.name = (a < b) ? "1" : "0";
-        result->data.type = "INTEGER";
+        Node* result = new Node(Token("INTEGER", (a < b) ? "1" : "0", 0));
         operands.push(result);
     }
     void evaluateGreaterThan(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        Node* result;
-        result->data.name = (a > b) ? "1" : "0";
-        result->data.type = "INTEGER";
+        Node* result = new Node(Token("INTEGER", (a > b) ? "1" : "0", 0));
         operands.push(result);
     }
     void evaluateLessThanOrEqual(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        Node* result;
-        result->data.name = (a <= b) ? "1" : "0";
-        result->data.type = "INTEGER";
+        Node* result = new Node(Token("INTEGER", (a <= b) ? "1" : "0", 0));
         operands.push(result);
     }
     void evaluateGreaterThanOrEqual(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        Node* result;
-        result->data.name = (a >= b) ? "1" : "0";
-        result->data.type = "INTEGER";
+        Node* result = new Node(Token("INTEGER", (a >= b) ? "1" : "0", 0));
         operands.push(result);
     }
     void evaluateLogicalAnd(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for logical AND");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        Node* result;
-        result->data.name = (a && b) ? "1" : "0";
-        result->data.type = "INTEGER";
+        Node* result = new Node(Token("INTEGER", (a && b) ? "1" : "0", 0));
         operands.push(result);
     }
     void evaluateLogicalOr(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for logical OR");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        Node* result;
-        result->data.name = (a || b) ? "1" : "0";
-        result->data.type = "INTEGER";
+        Node* result = new Node(Token("INTEGER", (a || b) ? "1" : "0", 0));
         operands.push(result);
     }
     void evaluateLogicalNot(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.empty()) throw std::runtime_error("Insufficient operands for logical NOT");
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        Node* result;
-        result->data.name = !a ? "1" : "0";
-        result->data.type = "INTEGER";
+        Node* result = new Node(Token("INTEGER", !a ? "1" : "0", 0));
         operands.push(result);
     }
 
