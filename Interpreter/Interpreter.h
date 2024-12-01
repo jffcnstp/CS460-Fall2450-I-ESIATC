@@ -302,39 +302,72 @@ public:
     }
 
 
-
-
-
+    //PA6: evaluateBoolExpression()
+    //called within an if, while, or for expression
+    bool evaluateBoolExpression(SymbolTable* SymbolTable, int currentScope) {
+        Node* currentNode = AST->getCurrentNode();
+        std::stack<Node*> evaluateStack;
+        while (currentNode != nullptr) {
+            if (currentNode->data.getType() == "IDENTIFIER" ||
+                currentNode->data.getType() == "INTEGER") {
+                evaluateStack.push(currentNode);
+                currentNode = currentNode->rightSibling;
+            }
+            else if (currentNode->data.getType() == "SINGLE_QUOTE") {
+                currentNode = currentNode->rightSibling;
+                evaluateStack.push(currentNode);
+                currentNode = currentNode->rightSibling;
+            }
+            else if (find(operatorlist.begin(), operatorlist.end(), currentNode->data.getType()) !=
+                     operatorlist.end()) {
+                opHelperFunction(currentNode, evaluateStack, table, currentScope);
+                currentNode = currentNode->rightSibling;
+            }
+        }
+        if (evaluateStack.size() != 1) {
+            std::cerr << "evaluateBoolExpression: evaluateStack should contain a single node, but doesn't" << std::endl;
+            exit(-1);
+        }
+        else if (evaluateStack.top()->data.getName() != "1" ||
+                 evaluateStack.top()->data.getName() != "0") {
+            std::cerr << "evaluateBoolExpression: final result is not a boolean value" << std::endl;
+            exit(-1);
+        }
+        else {
+            return evaluateStack.top();
+        }
+    }
 
     //PA6: evaluateExpression()
     //called when reaching a postfix expression in the AST
     //assumptions:
-    //  expression is part of an assignment or a boolean operation
+    //  expression is a numerical expression
     //  the current AST node is the first operand
     //helper functions needed:
-    //  operator shenanigans
     //  getArrayValue
     //  evaluateFunction
-    void evaluateExpression(SymbolTable* SymbolTable, int currentScope, Node* currentNode) {
-        bool expression = true;
-        //stack data type is tentative. must retrieve int value or ref to symbol table from string
-        std::stack<string> evaluateStack;
+    Value evaluateExpression(SymbolTable* SymbolTable, int currentScope) {
+        Node* currentNode = AST->getCurrentNode();
+        std::stack<Node*> evaluateStack;
         while (currentNode != nullptr) {
             //operands: identifiers. variables, functions, arrays
             if (currentNode->data.getType() == "IDENTIFIER") {
                 if (currentNode->rightSibling->data.getType() == "L_PAREN") {
-                    //string funcname=AST->getCurrentNode()->data.getName(); save the name of the function somewhere.
+                    string funcName = currentNode->data.getName();
                     //vector<string?> data = evaluatefunction() -> should return the parameter data in a vector.  The Node position should either be on R_PAREN or next operand
+                    vector<std::string> data = evaluateFunction();
 
-                    //progcounter.push(AST->getCurrentNode());  push the position onto the progcounter stack
-                    //findprocedure(funcname) moves the AST to where the function is in the AST
+                    progcounter.push(AST->getCurrentNode());
+                    findProcedure(funcName);
 
-                    //Symbol* localsymbol = searchSymbol(funcname) Calling the symbol to a local place because we need to set the parameter values before actually entering the function DFA
-                    //Set the symbols parameter data with the local vector we have
+                    Symbol* localSymbol = table->searchSymbol(funcName);
+//                    localSymbol->name = data[0]; i think searchSymbol does all this already?
+//                    localSymbol->type = data[1];
+//                    localSymbol->datatype = data[2];
 
-                    //Interpretfunction(funcname);  //DFA goes through the function
-                    //AST->setCurrentNode(progcounter.top()) //set the CurrentNode back to the middle of the expression
-                    //progcounter.pop()  // pop the stack since we don't need that node position anymore
+                    interpretFunction(funcName);
+                    AST->setCurrentNode(progcounter.top());
+                    progcounter.pop();
 
                     //evaluateStack.push(searchSymbol("functionname")->data); //when the DFA finishes it should have pushed a value to its data field
                 }
@@ -342,44 +375,111 @@ public:
                     //evaluateStack.push(getArrayValue);
                 }
                 else { //if not a function or array, push on to stack
-                    evaluateStack.push(currentNode->data.getName());
+                    evaluateStack.push(currentNode);
                 }
+            }
+                //operands: surrounded by quotes
+            else if (currentNode->data.getType() == "SINGLE_QUOTE" ||
+                     currentNode->data.getType() == "DOUBLE_QUOTE") {
+                currentNode = currentNode->rightSibling;
+                evaluateStack.push(currentNode);
+                currentNode = currentNode->rightSibling;
             }
                 //operands: integers
             else if (currentNode->data.getType() == "INTEGER") {
-                evaluateStack.push(currentNode->data.getName());
+                evaluateStack.push(currentNode);
                 currentNode = currentNode->rightSibling;
             }
                 //operators
             else if (find(operatorlist.begin(), operatorlist.end(), currentNode->data.getType()) !=
                      operatorlist.end()) {
-                opHelperFunction(currentNode, evaluateStack);
+                opHelperFunction(currentNode, evaluateStack, table, currentScope);
                 currentNode = currentNode->rightSibling;
             }
+                //assignment operator: end of expression
             else if (currentNode->data.getType() == "ASSIGNMENT_OPERATOR") {
-                if (SymbolTable->existsInTable(evaluateStack.top())) {
-
+                Symbol* op1Symbol;
+                Symbol* op2Symbol;
+                Value operand2, operand1;
+                if (evaluateStack.top()->data.getType() == "IDENTIFIER" &&
+                    SymbolTable->existsInTable(currentScope, evaluateStack.top()->data.getName())) {
+                    op2Symbol = SymbolTable->searchSymbol(currentScope, evaluateStack.top()->data.getName());
+                    operand2 = op2Symbol->value;
+                    evaluateStack.pop();
+                }
+                else if (evaluateStack.top()->data.getType() == "INTEGER") {
+                    operand2 = std::stoi(evaluateStack.top()->data.getName());
+                } else {
+                    std::cerr << "Error: operand2 is missing or something idk" << std::endl;
+                    exit(-1);
+                }
+                if (evaluateStack.top()->data.getType() == "IDENTIFIER" &&
+                    SymbolTable->existsInTable(currentScope, evaluateStack.top()->data.getName())) {
+                    op1Symbol = SymbolTable->searchSymbol(currentScope, evaluateStack.top()->data.getName());
+                    operand1 = op1Symbol->value;
+                    evaluateStack.pop();
+                }
+                else {
+                    std::cerr << "Error: attempting to assign value to non-variable" << std::endl;
+                    exit(-1);
+                }
+                if (std::get_if<int>(&operand2) && std::get_if<int>(&operand1)) {
+                    operand1 = operand2;
+                    SymbolTable->setValue(currentScope, op1Symbol->name, operand1);
+                    return operand1;
+                } else {
+                    std::cerr << "Assignment error: one or both operands are not valid types" << std::endl;
+                    exit(-1);
                 }
             }
         }
+        std::cerr << "evaluateExpression: Reached end of expression without returning a final result" << std::endl;
+        exit(-1);
     }
 
-    void opHelperFunction(Node* currentNode, std::stack<Node*>& evaluateStack, int currentScope, SymbolTable* symbolTable) {
-        // Get the current operator type from the node
-        std::string currentOperator = currentNode->data.getType();
-        // Determine the operation and call the corresponding function
+
+    void opHelperFunction(Node* currentNode, std::stack<Node*> &evaluateStack,
+                          SymbolTable *SymbolTable, int currentScope) {
+        string currentOperator = currentNode->data.getType();
         if (currentOperator == "PLUS") {
-            evaluatePlus(evaluateStack, currentScope, symbolTable);
-        } else if (currentOperator == "MINUS") {
-            evaluateMinus(evaluateStack, currentScope, symbolTable);
-        } else if (currentOperator == "MODULO") {
-            evaluateModulo(evaluateStack, currentScope, symbolTable);
-        } else if (currentOperator == "GT") {
-            evaluateGreaterThan(evaluateStack, currentScope, symbolTable);
-        } else if (currentOperator == "BOOLEAN_OR") {
-            evaluateLogicalOr(evaluateStack, currentScope, symbolTable);
-        } else {
-            throw std::runtime_error("Unsupported operator: " + currentOperator);
+            evaluatePlus(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "MINUS") {
+            evaluateMinus(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "ASTERISK") {
+            evaluateMultiply(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "DIVIDE") {
+            evaluateDivision(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "MODULO") {
+            evaluateModulo(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "LT_EQUAL") {
+            evaluateLessThanOrEqual(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "LT") {
+            evaluateLessThan(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "GT_EQUAL") {
+            evaluateGreaterThanOrEqual(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "GT") {
+            evaluateGreaterThan(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "BOOLEAN_AND") {
+            evaluateLogicalAnd(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "BOOLEAN_OR") {
+            evaluateLogicalOr(evaluateStack, currentScope, SymbolTable);
+        }
+        else if (currentOperator == "BOOLEAN_NOT_EQUAL") {
+            evaluateLogicalNot(evaluateStack, currentScope, SymbolTable);
+        }
+        else {
+            std::cerr << "opHelperFunction: unsupported operator" << std::endl;
+            exit(-1);
         }
     }
 
@@ -390,7 +490,7 @@ public:
         if (operands.empty()) throw std::runtime_error("Operand stack is empty");
         Node* top = operands.top();
         operands.pop();
-        
+
         if (top->data.getType() == "INTEGER") {
             return std::stoi(top->data.getName());
         }
