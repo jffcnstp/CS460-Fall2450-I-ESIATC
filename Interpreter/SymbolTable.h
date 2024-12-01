@@ -50,7 +50,26 @@ public:
      * bool existsInTable(int currentScope, const string& name) // checks whether the Symbol already exists in Symbol Table
      * void populateDeclaredFunctionParameter(Symbol *symbol)   //Assistant Function that directly handles the parameters inside procedures and functions
      * void populateDeclaredProcedure(int currentScope)          // populates the Symbol Table with a Declared procedure
+     * void assignSymbolValue(int currentscope, const string& name)             //Assigns a Symbol in table with a data value
      * void errorStatement(string fromwhere, int currentScope, Node* node)      //Assistant Function that prints an error statement called from one of the other functions and exits
+     * Symbol* searchSymbol(int currentScope, const string& name)               // returns a Symbol if it exists in the Symbol Table
+     * Symbol* searchSymbol(const string& name)                                 // returns a Symbol if it is a exists as a function/procedure in the Symbol Table
+     * string getFuncProcName(const string& name)                               // getters
+     * string getName(int currentScope, const string& name)
+     * string getType(int currentScope, const string& name)
+     * string getDatatype(int currentScope, const string& name)
+     * bool getIsArray(int currentScope, const string& name)
+     * int getArraySize(int currentScope, const string& name)
+     * int getScope(int currentScope, const string& name)
+     * Value getValue(int currentScope, const string& name)
+     * void setFuncProcName(const string& oldName, string newName)              // setters              
+     * void setName(int currentScope, const string& oldName, string newName)
+     * void setType(int currentScope, const string& name, string newType)
+     * void setDatatype(int currentScope, const string& name, string newDatatype)
+     * void setIsArray(int currentScope, const string& name, bool newValue)
+     * void setArraySize(int currentScope, const string& name, int newArraySize)
+     * void setScope(int currentScope, const string& name, int newScope)
+     * void setValue(int currentScope, const string& name, const Value& newValue)
      * */
 
     void addSymbol(Symbol *entry)
@@ -142,6 +161,10 @@ public:
 
                 CST->nextNode();
             }
+            else if(existsInTable(currentscope, current->data.getName()))
+            {
+                assignSymbolValue(currentscope, current->data.getName());
+            }
             else
                 CST->nextChild(); //skips over the entire Sibling chain into the next Child
         }
@@ -213,6 +236,59 @@ public:
         {
             cout<<"THERE IS SUPPOSED TO BE A SEMICOLON HERE.  INSTEAD IT'S A "<<CST->getCurrentNode()->data.getName() <<" TOKEN ON LINE: "<<CST->getCurrentNode()->data.getLine();
             exit(41);
+        }
+    }
+
+    // currently only works when assigning an int variable a positive integer
+    // sum = 1; WORKS
+    // sum = sum + 1; and sum = -1; DOESN'T WORK
+    void assignSymbolValue(int currentscope, const string& name)
+    {
+        CST->nextNode(); // moves to ASSIGNMENT_OPERATOR
+        string vartype = getDatatype(currentscope, name);
+        // on ASSIGNMENT_OPERATOR assign value to Symbol accordingly
+        if(CST->getCurrentNode()->data.getType()=="ASSIGNMENT_OPERATOR") {
+            if (vartype == "int")
+            {
+                CST->nextNode(); // move to integer
+                setValue(currentscope, name, stoi(CST->getCurrentNode()->data.getName()));
+            } else if (vartype == "bool")
+            {
+                CST->nextNode(); //move to boolean value
+                if (CST->getCurrentNode()->data.getName() == "true")
+                {
+                    setValue(currentscope, name, true);
+                }
+                else
+                {
+                    setValue(currentscope, name, false);
+                }
+
+            } else if (vartype == "char")
+            {
+                vector<char> string;
+                CST->nextNode(); // moves to opening SINGLE_QUOTE
+                CST->nextNode(); // moves to string
+                // stores characters from string in vector
+                for (auto &c : CST->getCurrentNode()->data.getName())
+                {
+                    if (c == '\\') break; // breaks on any occurrence of '\'
+                    string.push_back(c);
+                }
+                setValue(currentscope, name, string);
+                CST->nextNode(); // moves to closing SINGLE_QUOTE
+            }
+
+            CST->nextNode();
+            if(CST->getCurrentNode()->data.getType()=="SEMICOLON")
+            {
+                CST->nextNode();
+            }
+            else
+            {
+                cout<<"THERE IS SUPPOSED TO BE A SEMICOLON HERE.  INSTEAD IT'S A "<<CST->getCurrentNode()->data.getName() <<" TOKEN ON LINE: "<<CST->getCurrentNode()->data.getLine();
+                exit(-2);
+            }
         }
     }
 
