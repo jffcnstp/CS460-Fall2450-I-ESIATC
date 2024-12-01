@@ -6,6 +6,7 @@
 #define INTERPRETER_INTERPRETER_H
 #include "AbstractSyntaxTree.h"
 #include "SymbolTable.h"
+#include "Token.h"
 #include <stack>
 #include <iostream>
 
@@ -111,7 +112,7 @@ public:
             else if(AST->getCurrentNode()->data.getType()=="WHILE")
             {
                 progcounter.push(AST->getCurrentNode());
-                if(evaluateWhile(functionscope))
+                if(evaluateWhileStatement(functionscope))
                 {
                     inloop=true;
                     localscope=0;
@@ -126,7 +127,7 @@ public:
             else if(AST->getCurrentNode()->data.getType()=="FOR EXPRESSION 1")
             {
                 progcounter.push(AST->getCurrentNode());
-                if(evaluateFor(functionscope,inloop)) //evaluate whether we've gone through the first loop
+                if(evaluateForStatement(functionscope)) //evaluate whether we've gone through the first loop
                 {
                     inloop=true;
                     localscope=0;
@@ -134,7 +135,7 @@ public:
                 else
                 {
                     inloop=false;
-                    traverseConditionalBlock();
+                    traverseConditionalBlock();  //is this necessary for FOR?
                     progcounter.pop();
                 }
             }
@@ -166,32 +167,32 @@ public:
     // parameters:
     // Traversal, the node that is being traversed
     // functionscope, an integer that helps keep track of its scope
-
-    void evaluateIfStatement(Node* Traversal, int functionscope) {
-
+    bool evaluateIfStatement(Node* Traversal, int functionScope) {
         // Move to the condition node
         Node* conditionNode = Traversal->leftChild;
 
-        // Grabbing sibling
+        // Grabbing sibling (body block of the IF statement)
         Node* bodyBlock = conditionNode->rightSibling;
 
-        // Evaluates the expression past IF
-        evaluateExpression(table,functionscope,conditionNode);
+        // Evaluate the condition
+        evaluateExpression(table, functionScope, conditionNode);
 
+        // Check the condition result
         bool conditionResult = conditionNode->data.getName() == "true";
 
-        // if false, do else statement and stop evaluating if.
-        if (!conditionResult) {
-            evaluateElseStatement(Traversal,functionscope);
-            traverseNext(Traversal);
-            return;
+        if (conditionResult) {
+            // If the condition is true, interpret the body block
+            InterpretFunction(functionScope); // Assume InterpretFunction automatically interprets the subtree
+            traverseNext(Traversal); // Move past the IF block
+            return true; // IF block was executed
+        } else {
+            // If the condition is false, check for an ELSE block
+            if (bodyBlock->rightSibling && bodyBlock->rightSibling->data.getType() == "ELSE") {
+                return evaluateElseStatement(bodyBlock->rightSibling, functionScope); // Evaluate the ELSE block
+            }
+            traverseNext(Traversal); // Skip the IF block and any non-existent ELSE block
+            return false; // Neither IF nor ELSE blocks were executed
         }
-
-        // interpret the bodyBlock
-        InterpretFunction(bodyBlock, functionscope);
-
-        // Go next
-        traverseNext(Traversal);
     }
 
     // evaluateElseStatement();
@@ -199,34 +200,111 @@ public:
     // parameters:
     // Traversal, the node that is being traversed
     // functionscope, an integer that helps keep track of its scope
+    bool evaluateElseStatement(Node* Traversal, int functionScope) {
+        // Grabbing the body block (child of ELSE)
+        Node* bodyBlock = Traversal->leftChild;
 
-    void evaluateElseStatement(Node* Traversal, int functionscope) {
-
-        // Move to the condition node
-        Node* conditionNode = Traversal->leftChild;
-
-        // Grabbing sibling
-        Node* bodyBlock = conditionNode->rightSibling;
-
-        // Evaluates the expression past ELSE
-        evaluateExpression(table,functionscope,conditionNode);
-
-        bool conditionResult = conditionNode->data.getName() == "false";
-
-        // if true, do else statement and stop evaluating if.
-        if (!conditionResult) {
-            evaluateIfStatement(Traversal,functionscope);
-            traverseNext(Traversal);
-            return;
+        // Check if the ELSE block has a body to execute
+        if (bodyBlock != nullptr) {
+            // Interpret the ELSE block
+            InterpretFunction(functionScope); // Assume InterpretFunction interprets the subtree
+            traverseNext(Traversal); // Move past the ELSE block
+            return true; // ELSE block was executed
         }
 
-        // interpret the bodyBlock
-        InterpretFunction(bodyBlock, functionscope);
-
-        // Go next
-        traverseNext(Traversal);
-
+        traverseNext(Traversal); // Move past the ELSE block
+        return false; // ELSE block was skipped (no body present)
     }
+
+
+    bool evaluateWhileStatement(int functionScope) {
+        bool loopExecuted = false;
+
+        // Move to the condition node of the WHILE
+        AST->nextChild(); 
+        Node* conditionNode = AST->getCurrentNode(); // Save the current node as the condition
+
+        // Move to the body block (sibling of the condition)
+        AST->nextNode();
+        Node* bodyBlock = AST->getCurrentNode();
+
+        while (true) {
+            // Evaluate the condition
+            evaluateExpression(table, functionScope, conditionNode);
+
+            // Check the condition result (stored in the token's name)
+            bool conditionResult = conditionNode->data.getName() == "true";
+
+            // If the condition is false, break the loop
+            if (!conditionResult) {
+                break;
+            }
+
+            // Set loopExecuted to true since the loop ran
+            loopExecuted = true;
+
+            // Interpret the body block
+            InterpretFunction(functionScope);
+            
+            // Reset to the condition node for reevaluation
+            AST->setCurrentNode(conditionNode);
+        }
+
+        // After exiting the loop, ensure the AST points to the correct node (end of WHILE)
+        AST->setCurrentNode(bodyBlock->rightSibling);
+
+        return loopExecuted;
+    }
+
+
+    bool evaluateForStatement(int functionScope) {
+        // Step 1: Move to the initialization (Expression 1)
+        Node* initNode = AST->getCurrentNode()->leftChild;
+
+        // Evaluate initialization (e.g., variable assignment or declaration)
+        evaluateExpression(table, functionScope, initNode);
+
+        // Step 2: Move to the condition (Expression 2)
+        Node* conditionNode = initNode->rightSibling;
+
+        // Evaluate the condition
+        evaluateExpression(table, functionScope, conditionNode);
+        bool conditionResult = conditionNode->data.getName() == "true";
+
+        // Step 3: Move to the increment (Expression 3)
+        Node* incrementNode = conditionNode->rightSibling;
+
+        // Step 4: Move to the body block
+        Node* bodyBlock = incrementNode->rightSibling;
+
+        // Step 5: Loop execution
+        while (conditionResult) {
+            // Execute the body block
+            InterpretFunction(functionScope);
+
+            // Evaluate the increment (e.g., updating a loop variable)
+            evaluateExpression(table, functionScope, incrementNode);
+
+            // Re-evaluate the condition
+            evaluateExpression(table, functionScope, conditionNode);
+            conditionResult = conditionNode->data.getName() == "true";
+        }
+
+        // If the loop condition is false initially, skip the loop body
+        if (!conditionResult) {
+            // Traverse past the FOR block to continue interpretation
+            traverseConditionalBlock();
+            return false; // FOR loop was skipped
+        }
+
+        // Loop executed at least once
+        return true;
+    }
+
+
+
+
+
 
     //PA6: evaluateExpression()
     //called when reaching a postfix expression in the AST
@@ -286,120 +364,131 @@ public:
         }
     }
 
-    void opHelperFunction(Node* currentNode, std::stack<string> &evaluateStack) {
-        string currentOperator = currentNode->data.getType();
+    void opHelperFunction(Node* currentNode, std::stack<Node*>& evaluateStack, int currentScope, SymbolTable* symbolTable) {
+        // Get the current operator type from the node
+        std::string currentOperator = currentNode->data.getType();
+        // Determine the operation and call the corresponding function
         if (currentOperator == "PLUS") {
-            evaluatePlus(evaluateStack);
-        }
-        else if (currentOperator == "MINUS") {
-            evaluateMinus(evaluateStack);
-        }
-        else if (currentOperator == "MODULO") {
-            evaluateModulo(evaluateStack);
-        }
-        else if (currentOperator == "GT") {
-            evaluateGreaterThan(evaluateStack);
-        }
-        else if (currentOperator == "BOOLEAN_OR") {
-            evaluateLogicalOr(evaluateStack);
+            evaluatePlus(evaluateStack, currentScope, symbolTable);
+        } else if (currentOperator == "MINUS") {
+            evaluateMinus(evaluateStack, currentScope, symbolTable);
+        } else if (currentOperator == "MODULO") {
+            evaluateModulo(evaluateStack, currentScope, symbolTable);
+        } else if (currentOperator == "GT") {
+            evaluateGreaterThan(evaluateStack, currentScope, symbolTable);
+        } else if (currentOperator == "BOOLEAN_OR") {
+            evaluateLogicalOr(evaluateStack, currentScope, symbolTable);
+        } else {
+            throw std::runtime_error("Unsupported operator: " + currentOperator);
         }
     }
 
 
 
     // Helper function for the helper functions (resolves operand value in case of variables)
-    int resolveOperandValue(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    int resolveOperandValue(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.empty()) throw std::runtime_error("Operand stack is empty");
-        std::string top = operands.top();
+        Node* top = operands.top();
         operands.pop();
-
-        // Check if the top is a numeric literal
-        if (std::isdigit(top[0]) || (top[0] == '-' && top.size() > 1 && std::isdigit(top[1]))) {
-            return std::stoi(top);
+        
+        if (top->data.getType() == "INTEGER") {
+            return std::stoi(top->data.getName());
         }
 
         // Otherwise, assume it's a variable
-        Symbol* symbol = symbolTable.searchSymbol(currentScope, top);
+        Symbol* symbol = symbolTable->searchSymbol(currentScope, top->data.getName());
         if (!symbol || symbol->datatype != "int" || symbol->isArray) {
-            throw std::runtime_error("Invalid variable: " + top);
+            throw std::runtime_error("Invalid variable: " + top->data.getName());
         }
 
         // Assuming variable value is stored in name as a string
         return std::stoi(symbol->name);
     }
 
-    void evaluatePlus(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluatePlus(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for addition");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(std::to_string(a + b));
+        Node* result = new Node(Token("INTEGER", std::to_string(a + b), 0));
+        operands.push(result);
     }
-    void evaluateMinus(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateMinus(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for subtraction");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(std::to_string(a - b));
+        Node* result = new Node(Token("INTEGER", std::to_string(a - b), 0));
+        operands.push(result);
     }
-    void evaluateMultiply(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateMultiply(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for multiplication");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(std::to_string(a * b));
+        Node* result = new Node(Token("INTEGER", std::to_string(a * b), 0));
+        operands.push(result);
     }
-    void evaluateDivision(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateDivision(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for division");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         if (b == 0) throw std::runtime_error("Division by zero");
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(std::to_string(a / b));
+        Node* result = new Node(Token("INTEGER", std::to_string(a / b), 0));
+        operands.push(result);
     }
-    void evaluateModulo(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateModulo(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for modulo");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         if (b == 0) throw std::runtime_error("Modulo by zero");
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(std::to_string(a % b));
+        Node* result = new Node(Token("INTEGER", std::to_string(a % b), 0));
+        operands.push(result);
     }
-    void evaluateLessThan(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateLessThan(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(a < b ? "1" : "0");
+        Node* result = new Node(Token("INTEGER", (a < b) ? "1" : "0", 0));
+        operands.push(result);
     }
-    void evaluateGreaterThan(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateGreaterThan(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(a > b ? "1" : "0");
+        Node* result = new Node(Token("INTEGER", (a > b) ? "1" : "0", 0));
+        operands.push(result);
     }
-    void evaluateLessThanOrEqual(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateLessThanOrEqual(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(a <= b ? "1" : "0");
+        Node* result = new Node(Token("INTEGER", (a <= b) ? "1" : "0", 0));
+        operands.push(result);
     }
-    void evaluateGreaterThanOrEqual(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateGreaterThanOrEqual(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for comparison");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(a >= b ? "1" : "0");
+        Node* result = new Node(Token("INTEGER", (a >= b) ? "1" : "0", 0));
+        operands.push(result);
     }
-    void evaluateLogicalAnd(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateLogicalAnd(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for logical AND");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push((a && b) ? "1" : "0");
+        Node* result = new Node(Token("INTEGER", (a && b) ? "1" : "0", 0));
+        operands.push(result);
     }
-    void evaluateLogicalOr(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateLogicalOr(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.size() < 2) throw std::runtime_error("Insufficient operands for logical OR");
         int b = resolveOperandValue(operands, currentScope, symbolTable);
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push((a || b) ? "1" : "0");
+        Node* result = new Node(Token("INTEGER", (a || b) ? "1" : "0", 0));
+        operands.push(result);
     }
-    void evaluateLogicalNot(std::stack<std::string>& operands, int currentScope, SymbolTable& symbolTable) {
+    void evaluateLogicalNot(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
         if (operands.empty()) throw std::runtime_error("Insufficient operands for logical NOT");
         int a = resolveOperandValue(operands, currentScope, symbolTable);
-        operands.push(!a ? "1" : "0");
+        Node* result = new Node(Token("INTEGER", !a ? "1" : "0", 0));
+        operands.push(result);
     }
 
     void traverseConditionalBlock()
