@@ -177,7 +177,7 @@ public:
         AST->setCurrentNode(conditionNode);
 
         // Evaluate the boolean expression
-        bool conditionResult = evaluateBoolExpression(table, functionScope);
+        bool conditionResult = evaluateBoolExpression(functionScope);
 
         // Return the result of the boolean expression
         return conditionResult;
@@ -192,7 +192,7 @@ public:
         AST->setCurrentNode(conditionNode);
 
         // Evaluate the boolean expression
-        bool conditionResult = evaluateBoolExpression(table, functionScope);
+        bool conditionResult = evaluateBoolExpression(functionScope);
 
         // Return the result of the boolean expression
         return conditionResult;
@@ -206,7 +206,7 @@ public:
         // If initialization needs to be executed (skipInit == false), evaluate it
         if (!skipInit) {
             AST->setCurrentNode(initNode); // Move to the initialization node
-            evaluateExpression(table, functionScope); // Evaluate the initialization expression
+            evaluateExpression(functionScope); // Evaluate the initialization expression
         }
 
         // Step 2: Move to the condition node (Expression 2)
@@ -214,7 +214,7 @@ public:
         AST->setCurrentNode(conditionNode); // Set the current node to the condition
 
         // Evaluate the condition using evaluateBoolExpression
-        bool conditionResult = evaluateBoolExpression(table, functionScope);
+        bool conditionResult = evaluateBoolExpression(functionScope);
 
         // Return the result of evaluating the condition
         return conditionResult;
@@ -223,7 +223,7 @@ public:
 
     //PA6: evaluateBoolExpression()
     //called within an if, while, or for expression
-    bool evaluateBoolExpression(SymbolTable* SymbolTable, int currentScope) {
+    bool evaluateBoolExpression(int currentScope) {
         Node* currentNode = AST->getCurrentNode();
         std::stack<Node*> evaluateStack;
         while (currentNode != nullptr) {
@@ -265,7 +265,7 @@ public:
     //helper functions needed:
     //  getArrayValue
     //  evaluateFunction
-    Value evaluateExpression(SymbolTable* SymbolTable, int currentScope) {
+    Value evaluateExpression(int currentScope) {
         Node* currentNode = AST->getCurrentNode();
         std::stack<Node*> evaluateStack;
         while (currentNode != nullptr) {
@@ -273,23 +273,24 @@ public:
             if (currentNode->data.getType() == "IDENTIFIER") {
                 if (currentNode->rightSibling->data.getType() == "L_PAREN") {
                     string funcName = currentNode->data.getName();
-                    //vector<string?> data = evaluatefunction() -> should return the parameter data in a vector.  The Node position should either be on R_PAREN or next operand
-                    vector<std::string> data = evaluateFunction();
+                    //function result is stored in the function's symbol? ask anthony
+                    evaluateFunction(currentScope);
 
                     progcounter.push(AST->getCurrentNode());
                     findProcedure(funcName);
 
-                    Symbol* localSymbol = table->searchSymbol(funcName);
-
-                    //localSymbol->name = data[0]; i think searchSymbol does all this already?
-                    //localSymbol->type = data[1];
-                    //localSymbol->datatype = data[2];
-
-                    interpretFunction(funcName);
+                    InterpretFunction(currentScope);
                     AST->setCurrentNode(progcounter.top());
                     progcounter.pop();
 
-                    //evaluateStack.push(searchSymbol("functionname")->data); //when the DFA finishes it should have pushed a value to its data field
+                    Node* functResult;
+                    Symbol* localSymbol = table->searchSymbol(funcName);
+                    functResult->data.name = localSymbol->name;
+                    functResult->data.type = localSymbol->type;
+                    functResult->data.datatype = localSymbol->datatype;
+
+                    evaluateStack.push(functResult); //when the DFA finishes it should have pushed a value to its data field
+                    currentNode = currentNode->rightSibling; //node should now be the one after R_PAREN
                 }
                 else if (currentNode->rightSibling->data.getType() == "L_BRACE") {
                     //evaluateStack.push(getArrayValue);
@@ -322,8 +323,8 @@ public:
                 Symbol* op2Symbol;
                 Value operand2, operand1;
                 if (evaluateStack.top()->data.getType() == "IDENTIFIER" &&
-                    SymbolTable->existsInTable(currentScope, evaluateStack.top()->data.getName())) {
-                    op2Symbol = SymbolTable->searchSymbol(currentScope, evaluateStack.top()->data.getName());
+                    table->existsInTable(currentScope, evaluateStack.top()->data.getName())) {
+                    op2Symbol = table->searchSymbol(currentScope, evaluateStack.top()->data.getName());
                     operand2 = op2Symbol->value;
                     evaluateStack.pop();
                 }
@@ -334,8 +335,8 @@ public:
                     exit(-1);
                 }
                 if (evaluateStack.top()->data.getType() == "IDENTIFIER" &&
-                    SymbolTable->existsInTable(currentScope, evaluateStack.top()->data.getName())) {
-                    op1Symbol = SymbolTable->searchSymbol(currentScope, evaluateStack.top()->data.getName());
+                    table->existsInTable(currentScope, evaluateStack.top()->data.getName())) {
+                    op1Symbol = table->searchSymbol(currentScope, evaluateStack.top()->data.getName());
                     operand1 = op1Symbol->value;
                     evaluateStack.pop();
                 }
@@ -345,7 +346,7 @@ public:
                 }
                 if (std::get_if<int>(&operand2) && std::get_if<int>(&operand1)) {
                     operand1 = operand2;
-                    SymbolTable->setValue(currentScope, op1Symbol->name, operand1);
+                    table->setValue(currentScope, op1Symbol->name, operand1);
                     return operand1;
                 } else {
                     std::cerr << "Assignment error: one or both operands are not valid types" << std::endl;
@@ -370,7 +371,7 @@ public:
         AST->nextNode(); // moves to first parameter
 
         while (AST->getCurrentNode()->data.getType() != "R_PAREN") {
-            Value value = evaluateExpression(table, currentScope);
+            Value value = evaluateExpression(currentScope);
             parameterValues.push_back(value);
             AST->nextNode();
 
