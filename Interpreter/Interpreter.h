@@ -437,6 +437,32 @@ public:
         exit(-1);
     }
 
+    // enters a function's parameter values to the symbol
+    void evaluateFunction(int currentScope) {
+        vector<Value> parameterValues;
+
+        AST->nextNode(); // moves from ASSIGNMENT to IDENTIFIER
+        AST->nextNode(); // moves from IDENTIFIER to function called
+
+        string funcName = AST->getCurrentNode()->data.getName(); // get function name
+
+        AST->nextNode(); // moves to L_PAREN
+        AST->nextNode(); // moves to first parameter
+
+        while (AST->getCurrentNode()->data.getType() != "R_PAREN") {
+            Value value = evaluateExpression(table, currentScope);
+            parameterValues.push_back(value);
+            AST->nextNode();
+
+            if(AST->getCurrentNode()->data.getType() == "COMMA") {
+                AST->nextNode(); // moves past comma
+                AST->nextNode(); // moves to next parameter
+            }
+        }
+        table->setParameterValues(funcName, parameterValues);
+        // ends on R_PAREN
+    }
+
 
     void opHelperFunction(Node* currentNode, std::stack<Node*> &evaluateStack,
                           SymbolTable *SymbolTable, int currentScope) {
