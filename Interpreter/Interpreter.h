@@ -253,6 +253,7 @@ public:
             exit(-1);
         }
         else {
+            AST->setCurrentNode(currentNode);
             return evaluateStack.top();
         }
     }
@@ -347,6 +348,7 @@ public:
                 if (std::get_if<int>(&operand2) && std::get_if<int>(&operand1)) {
                     operand1 = operand2;
                     table->setValue(currentScope, op1Symbol->name, operand1);
+                    AST->setCurrentNode(currentNode);
                     return operand1;
                 } else {
                     std::cerr << "Assignment error: one or both operands are not valid types" << std::endl;
