@@ -104,6 +104,7 @@ public:
                  if(AST->getCurrentNode()->data.getType()=="ELSE")
                     AST->nextChild();
                     */
+
             }
             else if(AST->getCurrentNode()->data.getType()=="ELSE") // we hit an else but we did the IF
             {
@@ -126,8 +127,9 @@ public:
             }
             else if(AST->getCurrentNode()->data.getType()=="FOR EXPRESSION 1")
             {
+                //bool skipInit = /* Determine based on DFA logic or context */
                 progcounter.push(AST->getCurrentNode());
-                if(evaluateForStatement(functionscope)) //evaluate whether we've gone through the first loop
+                if(evaluateForStatement(functionscope, skipInit)) //evaluate whether we've gone through the first loop
                 {
                     inloop=true;
                     localscope=0;
@@ -135,7 +137,7 @@ public:
                 else
                 {
                     inloop=false;
-                    traverseConditionalBlock();  //is this necessary for FOR?
+                    traverseConditionalBlock();
                     progcounter.pop();
                 }
             }
@@ -165,140 +167,57 @@ public:
     // evaluateIfStatement();
     // This function will evaluate an if expression using a DFA, NOTE: THIS ALREADY ASSUMES IT'S CALLED ON AN IF
     // parameters:
-    // Traversal, the node that is being traversed
+
     // functionscope, an integer that helps keep track of its scope
-    bool evaluateIfStatement(Node* Traversal, int functionScope) {
-        // Move to the condition node
-        Node* conditionNode = Traversal->leftChild;
+    bool evaluateIfStatement(int functionScope) {
+        // Move to the condition node (left child of the IF node)
+        Node* conditionNode = AST->getCurrentNode()->leftChild;
 
-        // Grabbing sibling (body block of the IF statement)
-        Node* bodyBlock = conditionNode->rightSibling;
+        // Set the current node to the condition node
+        AST->setCurrentNode(conditionNode);
 
-        // Evaluate the condition
-        evaluateExpression(table, functionScope, conditionNode);
+        // Evaluate the boolean expression
+        bool conditionResult = evaluateBoolExpression(table, functionScope);
 
-        // Check the condition result
-        bool conditionResult = conditionNode->data.getName() == "true";
-
-        if (conditionResult) {
-            // If the condition is true, interpret the body block
-            InterpretFunction(functionScope); // Assume InterpretFunction automatically interprets the subtree
-            traverseNext(Traversal); // Move past the IF block
-            return true; // IF block was executed
-        } else {
-            // If the condition is false, check for an ELSE block
-            if (bodyBlock->rightSibling && bodyBlock->rightSibling->data.getType() == "ELSE") {
-                return evaluateElseStatement(bodyBlock->rightSibling, functionScope); // Evaluate the ELSE block
-            }
-            traverseNext(Traversal); // Skip the IF block and any non-existent ELSE block
-            return false; // Neither IF nor ELSE blocks were executed
-        }
-    }
-
-    // evaluateElseStatement();
-    // This function will evaluate an else expression using a DFA, NOTE: THIS ALREADY ASSUMES IT'S CALLED ON AN ELSE
-    // parameters:
-    // Traversal, the node that is being traversed
-    // functionscope, an integer that helps keep track of its scope
-    bool evaluateElseStatement(Node* Traversal, int functionScope) {
-        // Grabbing the body block (child of ELSE)
-        Node* bodyBlock = Traversal->leftChild;
-
-        // Check if the ELSE block has a body to execute
-        if (bodyBlock != nullptr) {
-            // Interpret the ELSE block
-            InterpretFunction(functionScope); // Assume InterpretFunction interprets the subtree
-            traverseNext(Traversal); // Move past the ELSE block
-            return true; // ELSE block was executed
-        }
-
-        traverseNext(Traversal); // Move past the ELSE block
-        return false; // ELSE block was skipped (no body present)
+        // Return the result of the boolean expression
+        return conditionResult;
     }
 
 
     bool evaluateWhileStatement(int functionScope) {
-        bool loopExecuted = false;
+        // Move to the condition node (left child of the WHILE node)
+        Node* conditionNode = AST->getCurrentNode()->leftChild;
 
-        // Move to the condition node of the WHILE
-        AST->nextChild(); 
-        Node* conditionNode = AST->getCurrentNode(); // Save the current node as the condition
+        // Set the current node to the condition node
+        AST->setCurrentNode(conditionNode);
 
-        // Move to the body block (sibling of the condition)
-        AST->nextNode();
-        Node* bodyBlock = AST->getCurrentNode();
+        // Evaluate the boolean expression
+        bool conditionResult = evaluateBoolExpression(table, functionScope);
 
-        while (true) {
-            // Evaluate the condition
-            evaluateExpression(table, functionScope, conditionNode);
-
-            // Check the condition result (stored in the token's name)
-            bool conditionResult = conditionNode->data.getName() == "true";
-
-            // If the condition is false, break the loop
-            if (!conditionResult) {
-                break;
-            }
-
-            // Set loopExecuted to true since the loop ran
-            loopExecuted = true;
-
-            // Interpret the body block
-            InterpretFunction(functionScope);
-            
-            // Reset to the condition node for reevaluation
-            AST->setCurrentNode(conditionNode);
-        }
-
-        // After exiting the loop, ensure the AST points to the correct node (end of WHILE)
-        AST->setCurrentNode(bodyBlock->rightSibling);
-
-        return loopExecuted;
+        // Return the result of the boolean expression
+        return conditionResult;
     }
 
 
-    bool evaluateForStatement(int functionScope) {
-        // Step 1: Move to the initialization (Expression 1)
+    bool evaluateForStatement(int functionScope, bool skipInit) {
+        // Step 1: Move to the initialization node (Expression 1)
         Node* initNode = AST->getCurrentNode()->leftChild;
 
-        // Evaluate initialization (e.g., variable assignment or declaration)
-        evaluateExpression(table, functionScope, initNode);
+        // If initialization needs to be executed (skipInit == false), evaluate it
+        if (!skipInit) {
+            AST->setCurrentNode(initNode); // Move to the initialization node
+            evaluateExpression(table, functionScope); // Evaluate the initialization expression
+        }
 
-        // Step 2: Move to the condition (Expression 2)
+        // Step 2: Move to the condition node (Expression 2)
         Node* conditionNode = initNode->rightSibling;
+        AST->setCurrentNode(conditionNode); // Set the current node to the condition
 
-        // Evaluate the condition
-        evaluateExpression(table, functionScope, conditionNode);
-        bool conditionResult = conditionNode->data.getName() == "true";
+        // Evaluate the condition using evaluateBoolExpression
+        bool conditionResult = evaluateBoolExpression(table, functionScope);
 
-        // Step 3: Move to the increment (Expression 3)
-        Node* incrementNode = conditionNode->rightSibling;
-
-        // Step 4: Move to the body block
-        Node* bodyBlock = incrementNode->rightSibling;
-
-        // Step 5: Loop execution
-        while (conditionResult) {
-            // Execute the body block
-            InterpretFunction(functionScope);
-
-            // Evaluate the increment (e.g., updating a loop variable)
-            evaluateExpression(table, functionScope, incrementNode);
-
-            // Re-evaluate the condition
-            evaluateExpression(table, functionScope, conditionNode);
-            conditionResult = conditionNode->data.getName() == "true";
-        }
-
-        // If the loop condition is false initially, skip the loop body
-        if (!conditionResult) {
-            // Traverse past the FOR block to continue interpretation
-            traverseConditionalBlock();
-            return false; // FOR loop was skipped
-        }
-
-        // Loop executed at least once
-        return true;
+        // Return the result of evaluating the condition
+        return conditionResult;
     }
 
 
@@ -361,9 +280,10 @@ public:
                     findProcedure(funcName);
 
                     Symbol* localSymbol = table->searchSymbol(funcName);
-//                    localSymbol->name = data[0]; i think searchSymbol does all this already?
-//                    localSymbol->type = data[1];
-//                    localSymbol->datatype = data[2];
+
+                    //localSymbol->name = data[0]; i think searchSymbol does all this already?
+                    //localSymbol->type = data[1];
+                    //localSymbol->datatype = data[2];
 
                     interpretFunction(funcName);
                     AST->setCurrentNode(progcounter.top());
