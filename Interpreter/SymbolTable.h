@@ -62,6 +62,7 @@ public:
      * int getArraySize(int currentScope, const string& name)
      * int getScope(int currentScope, const string& name)
      * Value getValue(int currentScope, const string& name)
+     * vector<Value> getParameterValues(const string& name)
      * void setFuncProcName(const string& oldName, string newName)              // setters              
      * void setName(int currentScope, const string& oldName, string newName)
      * void setType(int currentScope, const string& name, string newType)
@@ -70,6 +71,7 @@ public:
      * void setArraySize(int currentScope, const string& name, int newArraySize)
      * void setScope(int currentScope, const string& name, int newScope)
      * void setValue(int currentScope, const string& name, const Value& newValue)
+     * void setParameterValues(const string& name, const vector<Value>& paramValues)
      * */
 
     void addSymbol(Symbol *entry)
@@ -239,9 +241,10 @@ public:
         }
     }
 
-    // currently only works when assigning an int variable a positive integer
-    // sum = 1; WORKS
-    // sum = sum + 1; and sum = -1; DOESN'T WORK
+    // assigns the first node after ASSIGNMENT_OPERATOR, skips to SEMICOLON after first node
+    // sum = 1; sum = n; WORKS
+    // sum = n + 1;  Assigns sum's value to the value of n and skips to SEMICOLON
+    // sum = -1; DOESN'T WORK
     void assignSymbolValue(int currentscope, const string& name)
     {
         CST->nextNode(); // moves to ASSIGNMENT_OPERATOR
@@ -251,8 +254,20 @@ public:
             if (vartype == "int")
             {
                 CST->nextNode(); // move to integer
-                setValue(currentscope, name, stoi(CST->getCurrentNode()->data.getName()));
-            } else if (vartype == "bool")
+                if(existsInTable(currentscope, CST->getCurrentNode()->data.getName())) // if currentNode is in SymbolTable, set value from table
+                {
+                    setValue(currentscope, name, getValue(currentscope, CST->getCurrentNode()->data.getName()));
+                }
+                else if (CST->getCurrentNode()->data.getType() == "IDENTIFIER") // skips function calls
+                {
+                    CST->nextNode();
+                }
+                else
+                {
+                    setValue(currentscope, name, stoi(CST->getCurrentNode()->data.getName()));
+                }
+            }
+            else if (vartype == "bool")
             {
                 CST->nextNode(); //move to boolean value
                 if (CST->getCurrentNode()->data.getName() == "true")
@@ -264,7 +279,8 @@ public:
                     setValue(currentscope, name, false);
                 }
 
-            } else if (vartype == "char")
+            }
+            else if (vartype == "char")
             {
                 vector<char> string;
                 CST->nextNode(); // moves to opening SINGLE_QUOTE
@@ -286,8 +302,12 @@ public:
             }
             else
             {
-                cout<<"THERE IS SUPPOSED TO BE A SEMICOLON HERE.  INSTEAD IT'S A "<<CST->getCurrentNode()->data.getName() <<" TOKEN ON LINE: "<<CST->getCurrentNode()->data.getLine();
-                exit(-2);
+                CST->nextNode();
+                while(CST->getCurrentNode()->data.getType() != "SEMICOLON")
+                {
+                    CST->nextNode();
+                }
+                CST->nextNode();
             }
         }
     }
@@ -542,6 +562,15 @@ public:
         return Value(); //not found
     }
 
+    vector<Value> getParameterValues(const string& name) {
+        Symbol* currentSymbol = searchSymbol(name);
+        if (currentSymbol != nullptr) {
+            return currentSymbol->parameterValues;
+        }
+        cerr << "Error: Function/Procedure " << name << " not found\n";
+        return vector<Value> {};
+    }
+
     // setters for Symbol
     void setFuncProcName(const string& oldName, string newName) {
         Symbol* currentSymbol = searchSymbol(oldName);
@@ -613,6 +642,15 @@ public:
             return;
         }
         cerr << "Error: Symbol " << name << " not found in scope " << currentScope << endl;
+    }
+
+    void setParameterValues(const string& name, const vector<Value>& paramValues) {
+        Symbol* currentSymbol = searchSymbol(name);
+        if (currentSymbol != nullptr) {
+            currentSymbol->parameterValues = paramValues;
+            return;
+        }
+        cerr << "Error: Function/Procedure " << name << " not found, parameters were not set!\n";
     }
 
 
