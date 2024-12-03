@@ -305,6 +305,10 @@ public:
                 evaluateStack.push(currentNode);
                 currentNode = currentNode->rightSibling;
             }
+            else if (currentNode->data.getType() == "STRING") {
+                evaluateStack.push(currentNode);
+                currentNode = currentNode->rightSibling;
+            }
                 //operands: integers
             else if (currentNode->data.getType() == "INTEGER") {
                 evaluateStack.push(currentNode);
@@ -444,14 +448,17 @@ public:
         if (top->data.getType() == "INTEGER") {
             // If the token is an integer literal, return its value
             return std::stoi(top->data.getName());
-        } else if (top->data.getType() == "IDENTIFIER") {
+        }
+        else if (top->data.getType() == "STRING") {
+            return hexToInt(top->data.getName());
+        }
+        else if (top->data.getType() == "IDENTIFIER") {
             // Handle variables by looking them up in the symbol table
             Symbol* symbol = symbolTable->searchSymbol(currentScope, top->data.getName());
             if (!symbol || symbol->datatype != "int" || symbol->isArray) {
                 throw std::runtime_error("Invalid variable: " + top->data.getName());
             }
-
-            // Fetch the variable's value (assuming a `value` field exists or is stored in `name`)
+            // Fetch the variable's value (that the symbol's value is an int)
             try {
                 return std::get<int>(symbol->value); // Replace `name` with `value` if such a field exists
             } catch (const std::invalid_argument&) {
@@ -562,6 +569,10 @@ public:
             AST->nextChild();
         }
         AST->nextChild();//should move from END BLOCK to next child
+    }
+
+    int hexToInt(std::string hexString) {
+        return std::stoi(hexString, nullptr, 16);
     }
 
 };
