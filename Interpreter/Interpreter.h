@@ -348,13 +348,13 @@ public:
                 }
                 if (std::get_if<int>(&operand2) && std::get_if<int>(&operand1)) {
                     operand1 = operand2;
-                    table->setValue(currentScope, op1Symbol->name, operand1);
+                    op1Symbol->setValue(operand1);
                     AST->setCurrentNode(currentNode->leftChild);
                     return operand1;
                 }
                 else if (op1Symbol->isArray && op1Symbol->datatype == "char") {
                     operand1 = operand2;
-                    table->setValue(currentScope, op1Symbol->name, operand1);
+                    op1Symbol->setValue(operand1);
                     AST->setCurrentNode(currentNode->leftChild);
                     return operand1;
                 }
