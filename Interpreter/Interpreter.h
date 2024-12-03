@@ -298,13 +298,7 @@ public:
                     currentNode = currentNode->rightSibling;
                 }
             }
-                //operands: surrounded by quotes
-            else if (currentNode->data.getType() == "SINGLE_QUOTE" ||
-                     currentNode->data.getType() == "DOUBLE_QUOTE") {
-                currentNode = currentNode->rightSibling;
-                evaluateStack.push(currentNode);
-                currentNode = currentNode->rightSibling;
-            }
+                //operands: string
             else if (currentNode->data.getType() == "STRING") {
                 evaluateStack.push(currentNode);
                 currentNode = currentNode->rightSibling;
@@ -331,6 +325,10 @@ public:
                     operand2 = op2Symbol->value;
                     evaluateStack.pop();
                 }
+                else if (evaluateStack.top()->data.getType() == "STRING") {
+                    operand2 = evaluateStack.top()->data.getName();
+                    evaluateStack.pop();
+                }
                 else if (evaluateStack.top()->data.getType() == "INTEGER") {
                     operand2 = std::stoi(evaluateStack.top()->data.getName());
                     evaluateStack.pop();
@@ -353,7 +351,14 @@ public:
                     table->setValue(currentScope, op1Symbol->name, operand1);
                     AST->setCurrentNode(currentNode->leftChild);
                     return operand1;
-                } else {
+                }
+                else if (op1Symbol->isArray && op1Symbol->datatype == "char") {
+                    operand1 = operand2;
+                    table->setValue(currentScope, op1Symbol->name, operand1);
+                    AST->setCurrentNode(currentNode->leftChild);
+                    return operand1;
+                }
+                else {
                     std::cerr << "Assignment error: one or both operands are not valid types" << std::endl;
                     exit(-1);
                 }
@@ -450,7 +455,7 @@ public:
             return std::stoi(top->data.getName());
         }
         else if (top->data.getType() == "STRING") {
-            return hexToInt(top->data.getName());
+            return std::stoi(top->data.getName(), nullptr, 16);
         }
         else if (top->data.getType() == "IDENTIFIER") {
             // Handle variables by looking them up in the symbol table
@@ -569,10 +574,6 @@ public:
             AST->nextChild();
         }
         AST->nextChild();//should move from END BLOCK to next child
-    }
-
-    int hexToInt(std::string hexString) {
-        return std::stoi(hexString, nullptr, 16);
     }
 
 };
