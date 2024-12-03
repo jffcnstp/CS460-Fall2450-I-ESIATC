@@ -390,7 +390,8 @@ public:
                 AST->nextNode(); // moves to next parameter
             }
         }
-        table->setParameterValues(funcName, parameterValues);
+        Symbol* localSymbol = table->searchSymbol(funcName);
+        localSymbol->setParameterValues(parameterValues);
         // ends on R_PAREN
     }
 

@@ -30,7 +30,27 @@ struct Symbol {
     Symbol () : isArray(false), arraySize(0), scope (0), next(nullptr) {};
     //initializer constructor
     Symbol(string name, string type, string datatype, bool isArray = false, int arraySize = 0, int scope = 0)
-            : name(name), type(type), datatype(datatype), isArray(isArray), arraySize(arraySize), scope(scope), next(nullptr) {}
+            : name(name), type(type), datatype(datatype), isArray(isArray), arraySize(arraySize), scope(scope), next(nullptr) {};
+    
+    //Getters
+    string getName() {return name;}
+    string getType() {return type;}
+    string getDatatype() {return datatype;}
+    bool getIsArray() {return isArray;}
+    int getArraySize() {return arraySize;}
+    int getScope() {return scope;}
+    Value getValue() {return value;}
+    vector<Value> getParameterValues() {return parameterValues;}
+
+    //Setters
+    void setName(const string& newName) {name = newName;}
+    void setType(const string& newType) {type = newType;}
+    void setDatatype(const string& newDatatype) {datatype = newDatatype;}
+    void setIsArray(bool &newIsArray) {isArray = newIsArray;}
+    void setArraySize(int newArraySize) {arraySize = newArraySize;}
+    void setScope(int newScope) {scope = newScope;}
+    void setValue(const Value& newValue) {value = newValue;}
+    void setParameterValues(const vector<Value>& paramValues) {parameterValues = paramValues;}
 };
 
 class SymbolTable{
@@ -54,24 +74,8 @@ public:
      * void errorStatement(string fromwhere, int currentScope, Node* node)      //Assistant Function that prints an error statement called from one of the other functions and exits
      * Symbol* searchSymbol(int currentScope, const string& name)               // returns a Symbol if it exists in the Symbol Table
      * Symbol* searchSymbol(const string& name)                                 // returns a Symbol if it is a exists as a function/procedure in the Symbol Table
-     * string getFuncProcName(const string& name)                               // getters
-     * string getName(int currentScope, const string& name)
-     * string getType(int currentScope, const string& name)
-     * string getDatatype(int currentScope, const string& name)
-     * bool getIsArray(int currentScope, const string& name)
-     * int getArraySize(int currentScope, const string& name)
-     * int getScope(int currentScope, const string& name)
-     * Value getValue(int currentScope, const string& name)
-     * vector<Value> getParameterValues(const string& name)
-     * void setFuncProcName(const string& oldName, string newName)              // setters              
-     * void setName(int currentScope, const string& oldName, string newName)
-     * void setType(int currentScope, const string& name, string newType)
-     * void setDatatype(int currentScope, const string& name, string newDatatype)
-     * void setIsArray(int currentScope, const string& name, bool newValue)
-     * void setArraySize(int currentScope, const string& name, int newArraySize)
-     * void setScope(int currentScope, const string& name, int newScope)
-     * void setValue(int currentScope, const string& name, const Value& newValue)
-     * void setParameterValues(const string& name, const vector<Value>& paramValues)
+     * string getFuncProcName(const string& name)                               // gets functions/procedures name
+     * void setFuncProcName(const string& oldName, string newName)              // sets name of a function/procedure
      * */
 
     void addSymbol(Symbol *entry)
@@ -248,7 +252,10 @@ public:
     void assignSymbolValue(int currentscope, const string& name)
     {
         CST->nextNode(); // moves to ASSIGNMENT_OPERATOR
-        string vartype = getDatatype(currentscope, name);
+        
+        Symbol* localSymbol = searchSymbol(currentscope, name);
+        string vartype = localSymbol->getDatatype();
+        
         // on ASSIGNMENT_OPERATOR assign value to Symbol accordingly
         if(CST->getCurrentNode()->data.getType()=="ASSIGNMENT_OPERATOR") {
             if (vartype == "int")
@@ -256,7 +263,8 @@ public:
                 CST->nextNode(); // move to integer
                 if(existsInTable(currentscope, CST->getCurrentNode()->data.getName())) // if currentNode is in SymbolTable, set value from table
                 {
-                    setValue(currentscope, name, getValue(currentscope, CST->getCurrentNode()->data.getName()));
+                    Symbol *tempSymbol = searchSymbol(currentscope, CST->getCurrentNode()->data.getName());
+                    localSymbol->setValue(tempSymbol->getValue());
                 }
                 else if (CST->getCurrentNode()->data.getType() == "IDENTIFIER") // skips function calls
                 {
@@ -264,7 +272,7 @@ public:
                 }
                 else
                 {
-                    setValue(currentscope, name, stoi(CST->getCurrentNode()->data.getName()));
+                    localSymbol->setValue(stoi(CST->getCurrentNode()->data.getName()));
                 }
             }
             else if (vartype == "bool")
@@ -272,11 +280,11 @@ public:
                 CST->nextNode(); //move to boolean value
                 if (CST->getCurrentNode()->data.getName() == "true")
                 {
-                    setValue(currentscope, name, true);
+                    localSymbol->setValue(true);
                 }
                 else
                 {
-                    setValue(currentscope, name, false);
+                    localSymbol->setValue(false);
                 }
 
             }
@@ -291,7 +299,7 @@ public:
                     if (c == '\\') break; // breaks on any occurrence of '\'
                     string.push_back(c);
                 }
-                setValue(currentscope, name, string);
+                localSymbol->setValue(string);
                 CST->nextNode(); // moves to closing SINGLE_QUOTE
             }
 
@@ -488,7 +496,6 @@ public:
         return nullptr;
     }
 
-    // getters for Symbol
     string getFuncProcName(const string& name) {
         Symbol* currentSymbol = searchSymbol(name);
         if (currentSymbol != nullptr) {
@@ -498,80 +505,6 @@ public:
         return "";
     }
 
-    string getName(int currentScope, const string& name) {
-        Symbol* currentSymbol = searchSymbol(currentScope, name);
-        if (currentSymbol != nullptr) {
-            return name;
-        }
-        cerr << "Error: Symbol " << name << " not found in scope " << currentScope << endl;
-        return "";
-    }
-
-    string getType(int currentScope, const string& name) {
-        Symbol* currentSymbol = searchSymbol(currentScope, name);
-        if (currentSymbol != nullptr) {
-            return currentSymbol->type;
-        }
-        cerr << "Error: Symbol " << name << " not found in scope " << currentScope << endl;
-        return "";
-    }
-
-
-    string getDatatype(int currentScope, const string& name) {
-        Symbol* currentSymbol = searchSymbol(currentScope, name);
-        if (currentSymbol != nullptr) {
-            return currentSymbol->datatype;
-        }
-        cerr << "Error: Symbol " << name << " not found in scope " << currentScope << endl;
-        return "";
-    }
-
-    bool getIsArray(int currentScope, const string& name) {
-        Symbol* currentSymbol = searchSymbol(currentScope, name);
-        if (currentSymbol != nullptr) {
-            return currentSymbol->isArray;
-        }
-        cerr << "Error: Symbol " << name << " not found in scope " << currentScope << endl;
-        return false;
-    }
-
-    int getArraySize(int currentScope, const string& name) {
-        Symbol* currentSymbol = searchSymbol(currentScope, name);
-        if (currentSymbol != nullptr) {
-            return currentSymbol->arraySize;
-        }
-        cerr << "Error: Symbol " << name << " not found in scope " << currentScope << endl;
-        return -1; //not found
-    }
-
-    int getScope(int currentScope, const string& name) {
-        Symbol* currentSymbol = searchSymbol(currentScope, name);
-        if (currentSymbol != nullptr) {
-            return currentSymbol->scope;
-        }
-        cerr << "Error: Symbol " << name << " not found in scope " << currentScope << endl;
-        return -1; //not found
-    }
-
-    Value getValue(int currentScope, const string& name) {
-        Symbol* currentSymbol = searchSymbol(currentScope, name);
-        if (currentSymbol != nullptr) {
-            return currentSymbol->value;
-        }
-        cerr << "Error: Symbol " << name << " not found in scope " << currentScope << endl;
-        return Value(); //not found
-    }
-
-    vector<Value> getParameterValues(const string& name) {
-        Symbol* currentSymbol = searchSymbol(name);
-        if (currentSymbol != nullptr) {
-            return currentSymbol->parameterValues;
-        }
-        cerr << "Error: Function/Procedure " << name << " not found\n";
-        return vector<Value> {};
-    }
-
-    // setters for Symbol
     void setFuncProcName(const string& oldName, string newName) {
         Symbol* currentSymbol = searchSymbol(oldName);
         if (currentSymbol != nullptr) {
@@ -579,78 +512,6 @@ public:
             return;
         }
         cerr << "Error: Function/Procedure " << oldName << " not found\n";
-    }
-
-    void setName(int currentScope, const string& oldName, string newName) {
-        Symbol* currentSymbol = searchSymbol(currentScope, oldName);
-        if (currentSymbol != nullptr) {
-            currentSymbol->name = newName;
-            return;
-        }
-        cerr << "Error: Symbol " << oldName << " not found in scope " << currentScope << endl;
-    }
-
-    void setType(int currentScope, const string& name, string newType) {
-        Symbol* currentSymbol = searchSymbol(currentScope, name);
-        if (currentSymbol != nullptr) {
-            currentSymbol->datatype = newType;
-            return;
-        }
-        cerr << "Error: Symbol " << name << " not found in scope " << currentScope << endl;
-    }
-
-    void setDatatype(int currentScope, const string& name, string newDatatype) {
-        Symbol* currentSymbol = searchSymbol(currentScope, name);
-        if (currentSymbol != nullptr) {
-            currentSymbol->datatype = newDatatype;
-            return;
-        }
-        cerr << "Error: Symbol " << name << " not found in scope " << currentScope << endl;
-    }
-
-     void setIsArray(int currentScope, const string& name, bool newValue) {
-        Symbol* currentSymbol = searchSymbol(currentScope, name);
-        if (currentSymbol != nullptr) {
-            currentSymbol->isArray = newValue;
-            return;
-        }
-        cerr << "Error: Symbol " << name << " not found in scope " << currentScope << endl;
-    }
-
-    void setArraySize(int currentScope, const string& name, int newArraySize) {
-        Symbol* currentSymbol = searchSymbol(currentScope, name);
-        if (currentSymbol != nullptr) {
-            currentSymbol->arraySize = newArraySize;
-            return;
-        }
-        cerr << "Error: Symbol " << name << " not found in scope " << currentScope << endl;
-    }
-
-    void setScope(int currentScope, const string& name, int newScope) {
-        Symbol* currentSymbol = searchSymbol(currentScope, name);
-        if (currentSymbol != nullptr) {
-            currentSymbol->scope = newScope;
-            return;
-        }
-        cerr << "Error: Symbol " << name << " not found in scope " << currentScope << endl;
-    }
-
-    void setValue(int currentScope, const string& name, const Value& newValue) {
-        Symbol* currentSymbol = searchSymbol(currentScope, name);
-        if (currentSymbol != nullptr) {
-            currentSymbol->value = newValue;
-            return;
-        }
-        cerr << "Error: Symbol " << name << " not found in scope " << currentScope << endl;
-    }
-
-    void setParameterValues(const string& name, const vector<Value>& paramValues) {
-        Symbol* currentSymbol = searchSymbol(name);
-        if (currentSymbol != nullptr) {
-            currentSymbol->parameterValues = paramValues;
-            return;
-        }
-        cerr << "Error: Function/Procedure " << name << " not found, parameters were not set!\n";
     }
 
 
