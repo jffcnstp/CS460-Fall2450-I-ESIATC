@@ -68,6 +68,7 @@ public:
         bool withinscope=true;
         bool inloop=false;
         int localscope=0;
+        bool skipInit = true;
 
         AST->nextChild(); //currently on function declaration.  Should traverse twice to go inside the block
         if(AST->getCurrentNode()->data.getType() != "BEGIN BLOCK") {
@@ -259,7 +260,7 @@ public:
     }
 
     //PA6: evaluateExpression()
-    //called when reaching a postfix expression in the AST
+    //called when AST's current node is ASSIGNMENT
     //assumptions:
     //  expression is a numerical expression
     //  the current AST node is the first operand
@@ -267,7 +268,7 @@ public:
     //  getArrayValue
     //  evaluateFunction
     Value evaluateExpression(int currentScope) {
-        Node* currentNode = AST->getCurrentNode();
+        Node* currentNode = AST->getCurrentNode()->rightSibling;
         std::stack<Node*> evaluateStack;
         while (currentNode != nullptr) {
             //operands: identifiers. variables, functions, arrays
@@ -295,6 +296,7 @@ public:
                 }
                 else { //if not a function or array, push on to stack
                     evaluateStack.push(currentNode);
+                    currentNode = currentNode->rightSibling;
                 }
             }
                 //operands: surrounded by quotes
@@ -311,7 +313,7 @@ public:
             }
                 //operators
             else if (find(operatorlist.begin(), operatorlist.end(), currentNode->data.getType()) !=
-                     operatorlist.end()) {
+                     operatorlist.end() && currentNode->data.getType() != "ASSIGNMENT_OPERATOR") {
                 opHelperFunction(currentNode, evaluateStack, table, currentScope);
                 currentNode = currentNode->rightSibling;
             }
@@ -328,6 +330,7 @@ public:
                 }
                 else if (evaluateStack.top()->data.getType() == "INTEGER") {
                     operand2 = std::stoi(evaluateStack.top()->data.getName());
+                    evaluateStack.pop();
                 } else {
                     std::cerr << "Error: operand2 is missing or something idk" << std::endl;
                     exit(-1);
