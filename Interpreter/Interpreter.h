@@ -284,11 +284,8 @@ public:
                     AST->setCurrentNode(progcounter.top());
                     progcounter.pop();
 
-                    Node* functResult;
                     Symbol* localSymbol = table->searchSymbol(funcName);
-                    functResult->data.name = localSymbol->name;
-                    functResult->data.type = localSymbol->type;
-                    functResult->data.datatype = localSymbol->datatype;
+                    Node* functResult = new Node(Token("INTEGER", localSymbol->name, 0));
 
                     evaluateStack.push(functResult); //when the DFA finishes it should have pushed a value to its data field
                     currentNode = currentNode->rightSibling; //node should now be the one after R_PAREN
