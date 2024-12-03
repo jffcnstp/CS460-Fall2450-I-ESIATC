@@ -260,13 +260,12 @@ public:
     }
 
     //PA6: evaluateExpression()
-    //called when AST's current node is ASSIGNMENT
     //assumptions:
     //  expression is a numerical expression
-    //  the current AST node is the first operand
+    //  the current AST node is the ASSIGNMENT node
+    //  after finishing, the node should be the left child of the last node
     //helper functions needed:
     //  getArrayValue
-    //  evaluateFunction
     Value evaluateExpression(int currentScope) {
         Node* currentNode = AST->getCurrentNode()->rightSibling;
         std::stack<Node*> evaluateStack;
@@ -348,7 +347,7 @@ public:
                 if (std::get_if<int>(&operand2) && std::get_if<int>(&operand1)) {
                     operand1 = operand2;
                     table->setValue(currentScope, op1Symbol->name, operand1);
-                    AST->setCurrentNode(currentNode);
+                    AST->setCurrentNode(currentNode->leftChild);
                     return operand1;
                 } else {
                     std::cerr << "Assignment error: one or both operands are not valid types" << std::endl;
@@ -434,24 +433,33 @@ public:
 
 
 
-    // Helper function for the helper functions (resolves operand value in case of variables)
-    int resolveOperandValue(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
-        if (operands.empty()) throw std::runtime_error("Operand stack is empty");
+    int resolveOperandValue(std::stack<Node*>& operands, int currentScope, SymbolTable* symbolTable) {
+        if (operands.empty()) {
+            throw std::runtime_error("Operand stack is empty");
+        }
+
         Node* top = operands.top();
         operands.pop();
 
         if (top->data.getType() == "INTEGER") {
+            // If the token is an integer literal, return its value
             return std::stoi(top->data.getName());
-        }
+        } else if (top->data.getType() == "IDENTIFIER") {
+            // Handle variables by looking them up in the symbol table
+            Symbol* symbol = symbolTable->searchSymbol(currentScope, top->data.getName());
+            if (!symbol || symbol->datatype != "int" || symbol->isArray) {
+                throw std::runtime_error("Invalid variable: " + top->data.getName());
+            }
 
-        // Otherwise, assume it's a variable
-        Symbol* symbol = symbolTable->searchSymbol(currentScope, top->data.getName());
-        if (!symbol || symbol->datatype != "int" || symbol->isArray) {
-            throw std::runtime_error("Invalid variable: " + top->data.getName());
+            // Fetch the variable's value (assuming a `value` field exists or is stored in `name`)
+            try {
+                return std::get<int>(symbol->value); // Replace `name` with `value` if such a field exists
+            } catch (const std::invalid_argument&) {
+                throw std::runtime_error("Variable " + symbol->name + " does not contain a valid integer value");
+            }
+        } else {
+            throw std::runtime_error("Unexpected token type: " + top->data.getType());
         }
-
-        // Assuming variable value is stored in name as a string
-        return std::stoi(symbol->name);
     }
 
     void evaluatePlus(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
