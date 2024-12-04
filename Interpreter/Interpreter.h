@@ -225,23 +225,22 @@ public:
     //PA6: evaluateBoolExpression()
     //called within an if, while, or for expression
     bool evaluateBoolExpression(int currentScope) {
-        Node* currentNode = AST->getCurrentNode()->rightSibling;
         std::stack<Node*> evaluateStack;
-        while (currentNode != nullptr) {
-            if (currentNode->data.getType() == "IDENTIFIER" ||
-                currentNode->data.getType() == "INTEGER") {
-                evaluateStack.push(currentNode);
-                currentNode = currentNode->rightSibling;
+        while (AST->getCurrentNode() != nullptr) {
+            if (AST->getCurrentNode()->data.getType() == "IDENTIFIER" ||
+                    AST->getCurrentNode()->data.getType() == "INTEGER") {
+                evaluateStack.push(AST->getCurrentNode());
+                AST->nextNode();
             }
-            else if (currentNode->data.getType() == "SINGLE_QUOTE") {
-                currentNode = currentNode->rightSibling;
-                evaluateStack.push(currentNode);
-                currentNode = currentNode->rightSibling;
+            else if (AST->getCurrentNode()->data.getType() == "SINGLE_QUOTE") {
+                AST->nextNode();
+                evaluateStack.push(AST->getCurrentNode());
+                AST->nextNode();
             }
-            else if (find(operatorlist.begin(), operatorlist.end(), currentNode->data.getType()) !=
+            else if (find(operatorlist.begin(), operatorlist.end(), AST->getCurrentNode()->data.getType()) !=
                      operatorlist.end()) {
-                opHelperFunction(currentNode, evaluateStack, table, currentScope);
-                currentNode = currentNode->rightSibling;
+                opHelperFunction(AST->getCurrentNode(), evaluateStack, table, currentScope);
+                AST->nextNode();
             }
         }
         if (evaluateStack.size() != 1) {
@@ -254,7 +253,7 @@ public:
             exit(-1);
         }
         else {
-            AST->setCurrentNode(currentNode->leftChild);
+            AST->setCurrentNode(AST->getCurrentNode()->leftChild);
             return evaluateStack.top();
         }
     }
@@ -267,15 +266,15 @@ public:
     //helper functions needed:
     //  getArrayValue
     Value evaluateExpression(int currentScope) {
-        Node* currentNode = AST->getCurrentNode()->rightSibling;
+        AST->nextNode();
         std::stack<Node*> evaluateStack;
-        while (currentNode != nullptr) {
+        while (AST->getCurrentNode() != nullptr) {
             //operands: identifiers. variables, functions, arrays
-            if (currentNode->data.getType() == "IDENTIFIER") {
-                if (currentNode->rightSibling->data.getType() == "L_PAREN") {
-                    string funcName = currentNode->data.getName();
+            if (AST->getCurrentNode()->data.getType() == "IDENTIFIER") {
+                if (AST->getCurrentNode()->rightSibling->data.getType() == "L_PAREN") {
+                    string funcName = AST->getCurrentNode()->data.getName();
                     //function result is stored in the function's symbol? ask anthony
-                    evaluateFunction(currentScope);
+                    evaluateFunction(currentScope, funcName);
 
                     progcounter.push(AST->getCurrentNode());
                     findProcedure(funcName);
@@ -289,34 +288,34 @@ public:
                     Node* functResult = new Node(Token("INTEGER", to_string(std::get<int>(localSymbol->value)), 0));
 
                     evaluateStack.push(functResult); //when the DFA finishes it should have pushed a value to its data field
-                    currentNode = currentNode->rightSibling; //node should now be the one after R_PAREN
+                    AST->nextNode(); //node should now be the one after R_PAREN
                 }
-                else if (currentNode->rightSibling->data.getType() == "L_BRACE") {
+                else if (AST->getCurrentNode()->rightSibling->data.getType() == "L_BRACE") {
                     //evaluateStack.push(getArrayValue);
                 }
                 else { //if not a function or array, push on to stack
-                    evaluateStack.push(currentNode);
-                    currentNode = currentNode->rightSibling;
+                    evaluateStack.push(AST->getCurrentNode());
+                    AST->nextNode();
                 }
             }
                 //operands: string
-            else if (currentNode->data.getType() == "STRING") {
-                evaluateStack.push(currentNode);
-                currentNode = currentNode->rightSibling;
+            else if (AST->getCurrentNode()->data.getType() == "STRING") {
+                evaluateStack.push(AST->getCurrentNode());
+                AST->nextNode();
             }
                 //operands: integers
-            else if (currentNode->data.getType() == "INTEGER") {
-                evaluateStack.push(currentNode);
-                currentNode = currentNode->rightSibling;
+            else if (AST->getCurrentNode()->data.getType() == "INTEGER") {
+                evaluateStack.push(AST->getCurrentNode());
+                AST->nextNode();
             }
                 //operators
-            else if (find(operatorlist.begin(), operatorlist.end(), currentNode->data.getType()) !=
-                     operatorlist.end() && currentNode->data.getType() != "ASSIGNMENT_OPERATOR") {
-                opHelperFunction(currentNode, evaluateStack, table, currentScope);
-                currentNode = currentNode->rightSibling;
+            else if (find(operatorlist.begin(), operatorlist.end(), AST->getCurrentNode()->data.getType()) !=
+                     operatorlist.end() && AST->getCurrentNode()->data.getType() != "ASSIGNMENT_OPERATOR") {
+                opHelperFunction(AST->getCurrentNode(), evaluateStack, table, currentScope);
+                AST->nextNode();
             }
                 //assignment operator: end of expression
-            else if (currentNode->data.getType() == "ASSIGNMENT_OPERATOR") {
+            else if (AST->getCurrentNode()->data.getType() == "ASSIGNMENT_OPERATOR") {
                 Symbol* op1Symbol;
                 Symbol* op2Symbol;
                 Value operand2, operand1;
@@ -350,13 +349,13 @@ public:
                 if (std::get_if<int>(&operand2) && std::get_if<int>(&operand1)) {
                     operand1 = operand2;
                     op1Symbol->setValue(operand1);
-                    AST->setCurrentNode(currentNode->leftChild);
+                    AST->setCurrentNode(AST->getCurrentNode()->leftChild);
                     return operand1;
                 }
                 else if (op1Symbol->isArray && op1Symbol->datatype == "char") {
                     operand1 = operand2;
                     op1Symbol->setValue(operand1);
-                    AST->setCurrentNode(currentNode->leftChild);
+                    AST->setCurrentNode(AST->getCurrentNode()->leftChild);
                     return operand1;
                 }
                 else {
@@ -370,15 +369,10 @@ public:
     }
 
     // enters a function's parameter values to the symbol
-    void evaluateFunction(int currentScope) {
+    void evaluateFunction(int currentScope, string funcName) {
         vector<Value> parameterValues;
 
-        AST->nextNode(); // moves from ASSIGNMENT to IDENTIFIER
-        AST->nextNode(); // moves from IDENTIFIER to function called
-
-        string funcName = AST->getCurrentNode()->data.getName(); // get function name
-
-        AST->nextNode(); // moves to L_PAREN
+        AST->nextNode(); // moves from IDENTIFIER to L_PAREN
         AST->nextNode(); // moves to first parameter
 
         while (AST->getCurrentNode()->data.getType() != "R_PAREN") {
