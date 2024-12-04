@@ -261,7 +261,13 @@ public:
             if (vartype == "int")
             {
                 CST->nextNode(); // move to integer
-                if(existsInTable(currentscope, CST->getCurrentNode()->data.getName())) // if currentNode is in SymbolTable, set value from table
+                if(CST->getCurrentNode()->data.getType() == "MINUS") // sets value to be negative
+                {
+                    CST->nextNode();
+
+                    localSymbol->setValue(-stoi(CST->getCurrentNode()->data.getName()));
+                }
+                else if(existsInTable(currentscope, CST->getCurrentNode()->data.getName())) // if currentNode is in SymbolTable, set value from table
                 {
                     Symbol *tempSymbol = searchSymbol(currentscope, CST->getCurrentNode()->data.getName());
                     localSymbol->setValue(tempSymbol->getValue());
