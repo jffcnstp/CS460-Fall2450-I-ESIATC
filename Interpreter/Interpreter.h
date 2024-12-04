@@ -68,6 +68,7 @@ public:
         bool withinscope=true;
         bool inloop=false;
         int localscope=0;
+        bool skipInit = true;
 
         AST->nextChild(); //currently on function declaration.  Should traverse twice to go inside the block
         if(AST->getCurrentNode()->data.getType() != "BEGIN BLOCK") {
@@ -177,7 +178,7 @@ public:
         AST->setCurrentNode(conditionNode);
 
         // Evaluate the boolean expression
-        bool conditionResult = evaluateBoolExpression(table, functionScope);
+        bool conditionResult = evaluateBoolExpression(functionScope);
 
         // Return the result of the boolean expression
         return conditionResult;
@@ -192,7 +193,7 @@ public:
         AST->setCurrentNode(conditionNode);
 
         // Evaluate the boolean expression
-        bool conditionResult = evaluateBoolExpression(table, functionScope);
+        bool conditionResult = evaluateBoolExpression(functionScope);
 
         // Return the result of the boolean expression
         return conditionResult;
@@ -206,7 +207,7 @@ public:
         // If initialization needs to be executed (skipInit == false), evaluate it
         if (!skipInit) {
             AST->setCurrentNode(initNode); // Move to the initialization node
-            evaluateExpression(table, functionScope); // Evaluate the initialization expression
+            evaluateExpression(functionScope); // Evaluate the initialization expression
         }
 
         // Step 2: Move to the condition node (Expression 2)
@@ -214,7 +215,7 @@ public:
         AST->setCurrentNode(conditionNode); // Set the current node to the condition
 
         // Evaluate the condition using evaluateBoolExpression
-        bool conditionResult = evaluateBoolExpression(table, functionScope);
+        bool conditionResult = evaluateBoolExpression(functionScope);
 
         // Return the result of evaluating the condition
         return conditionResult;
@@ -223,24 +224,23 @@ public:
 
     //PA6: evaluateBoolExpression()
     //called within an if, while, or for expression
-    bool evaluateBoolExpression(SymbolTable* SymbolTable, int currentScope) {
-        Node* currentNode = AST->getCurrentNode();
+    bool evaluateBoolExpression(int currentScope) {
         std::stack<Node*> evaluateStack;
-        while (currentNode != nullptr) {
-            if (currentNode->data.getType() == "IDENTIFIER" ||
-                currentNode->data.getType() == "INTEGER") {
-                evaluateStack.push(currentNode);
-                currentNode = currentNode->rightSibling;
+        while (AST->getCurrentNode() != nullptr) {
+            if (AST->getCurrentNode()->data.getType() == "IDENTIFIER" ||
+                    AST->getCurrentNode()->data.getType() == "INTEGER") {
+                evaluateStack.push(AST->getCurrentNode());
+                AST->nextNode();
             }
-            else if (currentNode->data.getType() == "SINGLE_QUOTE") {
-                currentNode = currentNode->rightSibling;
-                evaluateStack.push(currentNode);
-                currentNode = currentNode->rightSibling;
+            else if (AST->getCurrentNode()->data.getType() == "SINGLE_QUOTE") {
+                AST->nextNode();
+                evaluateStack.push(AST->getCurrentNode());
+                AST->nextNode();
             }
-            else if (find(operatorlist.begin(), operatorlist.end(), currentNode->data.getType()) !=
+            else if (find(operatorlist.begin(), operatorlist.end(), AST->getCurrentNode()->data.getType()) !=
                      operatorlist.end()) {
-                opHelperFunction(currentNode, evaluateStack, table, currentScope);
-                currentNode = currentNode->rightSibling;
+                opHelperFunction(AST->getCurrentNode(), evaluateStack, table, currentScope);
+                AST->nextNode();
             }
         }
         if (evaluateStack.size() != 1) {
@@ -253,89 +253,92 @@ public:
             exit(-1);
         }
         else {
+            AST->setCurrentNode(AST->getCurrentNode()->leftChild);
             return evaluateStack.top();
         }
     }
 
     //PA6: evaluateExpression()
-    //called when reaching a postfix expression in the AST
     //assumptions:
     //  expression is a numerical expression
-    //  the current AST node is the first operand
+    //  the current AST node is the ASSIGNMENT node
+    //  after finishing, the node should be the left child of the last node
     //helper functions needed:
     //  getArrayValue
-    //  evaluateFunction
-    Value evaluateExpression(SymbolTable* SymbolTable, int currentScope) {
-        Node* currentNode = AST->getCurrentNode();
+    Value evaluateExpression(int currentScope) {
+        AST->nextNode();
         std::stack<Node*> evaluateStack;
-        while (currentNode != nullptr) {
+        while (AST->getCurrentNode() != nullptr) {
             //operands: identifiers. variables, functions, arrays
-            if (currentNode->data.getType() == "IDENTIFIER") {
-                if (currentNode->rightSibling->data.getType() == "L_PAREN") {
-                    string funcName = currentNode->data.getName();
-                    //vector<string?> data = evaluatefunction() -> should return the parameter data in a vector.  The Node position should either be on R_PAREN or next operand
-                    vector<std::string> data = evaluateFunction();
+            if (AST->getCurrentNode()->data.getType() == "IDENTIFIER") {
+                if (AST->getCurrentNode()->rightSibling->data.getType() == "L_PAREN") {
+                    string funcName = AST->getCurrentNode()->data.getName();
+                    //function result is stored in the function's symbol? ask anthony
+                    evaluateFunction(currentScope, funcName);
 
                     progcounter.push(AST->getCurrentNode());
                     findProcedure(funcName);
 
-                    Symbol* localSymbol = table->searchSymbol(funcName);
-
-                    //localSymbol->name = data[0]; i think searchSymbol does all this already?
-                    //localSymbol->type = data[1];
-                    //localSymbol->datatype = data[2];
-
-                    interpretFunction(funcName);
+                    InterpretFunction(currentScope);
                     AST->setCurrentNode(progcounter.top());
                     progcounter.pop();
 
-                    //evaluateStack.push(searchSymbol("functionname")->data); //when the DFA finishes it should have pushed a value to its data field
+                    Symbol* localSymbol = table->searchSymbol(funcName);
+                    //this line is on the assumption that a function will return type int
+                    Node* functResult = new Node(Token("INTEGER", to_string(std::get<int>(localSymbol->value)), 0));
+
+                    evaluateStack.push(functResult); //when the DFA finishes it should have pushed a value to its data field
+                    AST->nextNode(); //node should now be the one after R_PAREN
                 }
-                else if (currentNode->rightSibling->data.getType() == "L_BRACE") {
+                else if (AST->getCurrentNode()->rightSibling->data.getType() == "L_BRACE") {
                     //evaluateStack.push(getArrayValue);
                 }
                 else { //if not a function or array, push on to stack
-                    evaluateStack.push(currentNode);
+                    evaluateStack.push(AST->getCurrentNode());
+                    AST->nextNode();
                 }
             }
-                //operands: surrounded by quotes
-            else if (currentNode->data.getType() == "SINGLE_QUOTE" ||
-                     currentNode->data.getType() == "DOUBLE_QUOTE") {
-                currentNode = currentNode->rightSibling;
-                evaluateStack.push(currentNode);
-                currentNode = currentNode->rightSibling;
+                //operands: string
+            else if (AST->getCurrentNode()->data.getType() == "STRING") {
+                evaluateStack.push(AST->getCurrentNode());
+                AST->nextNode();
             }
                 //operands: integers
-            else if (currentNode->data.getType() == "INTEGER") {
-                evaluateStack.push(currentNode);
-                currentNode = currentNode->rightSibling;
+            else if (AST->getCurrentNode()->data.getType() == "INTEGER") {
+                evaluateStack.push(AST->getCurrentNode());
+                AST->nextNode();
             }
                 //operators
-            else if (find(operatorlist.begin(), operatorlist.end(), currentNode->data.getType()) !=
-                     operatorlist.end()) {
-                opHelperFunction(currentNode, evaluateStack, table, currentScope);
-                currentNode = currentNode->rightSibling;
+            else if (find(operatorlist.begin(), operatorlist.end(), AST->getCurrentNode()->data.getType()) !=
+                     operatorlist.end() && AST->getCurrentNode()->data.getType() != "ASSIGNMENT_OPERATOR") {
+                opHelperFunction(AST->getCurrentNode(), evaluateStack, table, currentScope);
+                AST->nextNode();
             }
                 //assignment operator: end of expression
-            else if (currentNode->data.getType() == "ASSIGNMENT_OPERATOR") {
+            else if (AST->getCurrentNode()->data.getType() == "ASSIGNMENT_OPERATOR") {
                 Symbol* op1Symbol;
                 Symbol* op2Symbol;
                 Value operand2, operand1;
                 if (evaluateStack.top()->data.getType() == "IDENTIFIER" &&
-                    SymbolTable->existsInTable(currentScope, evaluateStack.top()->data.getName())) {
-                    op2Symbol = SymbolTable->searchSymbol(currentScope, evaluateStack.top()->data.getName());
+                    table->existsInTable(currentScope, evaluateStack.top()->data.getName())) {
+                    op2Symbol = table->searchSymbol(currentScope, evaluateStack.top()->data.getName());
                     operand2 = op2Symbol->value;
+                    evaluateStack.pop();
+                }
+                else if (evaluateStack.top()->data.getType() == "STRING") {
+                    operand2 = evaluateStack.top()->data.getName();
                     evaluateStack.pop();
                 }
                 else if (evaluateStack.top()->data.getType() == "INTEGER") {
                     operand2 = std::stoi(evaluateStack.top()->data.getName());
+                    evaluateStack.pop();
                 } else {
                     std::cerr << "Error: operand2 is missing or something idk" << std::endl;
                     exit(-1);
                 }
                 if (evaluateStack.top()->data.getType() == "IDENTIFIER" &&
-                    SymbolTable->existsInTable(currentScope, evaluateStack.top()->data.getName())) {
-                    op1Symbol = SymbolTable->searchSymbol(currentScope, evaluateStack.top()->data.getName());
+                    table->existsInTable(currentScope, evaluateStack.top()->data.getName())) {
+                    op1Symbol = table->searchSymbol(currentScope, evaluateStack.top()->data.getName());
                     operand1 = op1Symbol->value;
                     evaluateStack.pop();
                 }
@@ -345,9 +348,17 @@ public:
                 }
                 if (std::get_if<int>(&operand2) && std::get_if<int>(&operand1)) {
                     operand1 = operand2;
-                    SymbolTable->setValue(currentScope, op1Symbol->name, operand1);
+                    op1Symbol->setValue(operand1);
+                    AST->setCurrentNode(AST->getCurrentNode()->leftChild);
                     return operand1;
-                } else {
+                }
+                else if (op1Symbol->isArray && op1Symbol->datatype == "char") {
+                    operand1 = operand2;
+                    op1Symbol->setValue(operand1);
+                    AST->setCurrentNode(AST->getCurrentNode()->leftChild);
+                    return operand1;
+                }
+                else {
                     std::cerr << "Assignment error: one or both operands are not valid types" << std::endl;
                     exit(-1);
                 }
@@ -358,19 +369,14 @@ public:
     }
 
     // enters a function's parameter values to the symbol
-    void evaluateFunction(int currentScope) {
+    void evaluateFunction(int currentScope, string funcName) {
         vector<Value> parameterValues;
 
-        AST->nextNode(); // moves from ASSIGNMENT to IDENTIFIER
-        AST->nextNode(); // moves from IDENTIFIER to function called
-
-        string funcName = AST->getCurrentNode()->data.getName(); // get function name
-
-        AST->nextNode(); // moves to L_PAREN
+        AST->nextNode(); // moves from IDENTIFIER to L_PAREN
         AST->nextNode(); // moves to first parameter
 
         while (AST->getCurrentNode()->data.getType() != "R_PAREN") {
-            Value value = evaluateExpression(table, currentScope);
+            Value value = evaluateExpression(currentScope);
             parameterValues.push_back(value);
             AST->nextNode();
 
@@ -379,7 +385,8 @@ public:
                 AST->nextNode(); // moves to next parameter
             }
         }
-        table->setParameterValues(funcName, parameterValues);
+        Symbol* localSymbol = table->searchSymbol(funcName);
+        localSymbol->setParameterValues(parameterValues);
         // ends on R_PAREN
     }
 
@@ -431,24 +438,36 @@ public:
 
 
 
-    // Helper function for the helper functions (resolves operand value in case of variables)
-    int resolveOperandValue(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
-        if (operands.empty()) throw std::runtime_error("Operand stack is empty");
+    int resolveOperandValue(std::stack<Node*>& operands, int currentScope, SymbolTable* symbolTable) {
+        if (operands.empty()) {
+            throw std::runtime_error("Operand stack is empty");
+        }
+
         Node* top = operands.top();
         operands.pop();
 
         if (top->data.getType() == "INTEGER") {
+            // If the token is an integer literal, return its value
             return std::stoi(top->data.getName());
         }
-
-        // Otherwise, assume it's a variable
-        Symbol* symbol = symbolTable->searchSymbol(currentScope, top->data.getName());
-        if (!symbol || symbol->datatype != "int" || symbol->isArray) {
-            throw std::runtime_error("Invalid variable: " + top->data.getName());
+        else if (top->data.getType() == "STRING") {
+            return std::stoi(top->data.getName(), nullptr, 16);
         }
-
-        // Assuming variable value is stored in name as a string
-        return std::stoi(symbol->name);
+        else if (top->data.getType() == "IDENTIFIER") {
+            // Handle variables by looking them up in the symbol table
+            Symbol* symbol = symbolTable->searchSymbol(currentScope, top->data.getName());
+            if (!symbol || symbol->datatype != "int" || symbol->isArray) {
+                throw std::runtime_error("Invalid variable: " + top->data.getName());
+            }
+            // Fetch the variable's value (that the symbol's value is an int)
+            try {
+                return std::get<int>(symbol->value); // Replace `name` with `value` if such a field exists
+            } catch (const std::invalid_argument&) {
+                throw std::runtime_error("Variable " + symbol->name + " does not contain a valid integer value");
+            }
+        } else {
+            throw std::runtime_error("Unexpected token type: " + top->data.getType());
+        }
     }
 
     void evaluatePlus(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable) {
