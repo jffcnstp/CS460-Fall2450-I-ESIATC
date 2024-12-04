@@ -7,6 +7,7 @@
 #include "RecursiveDescentParser.h"
 #include "SymbolTable.h"
 #include "AbstractSyntaxTree.h"
+#include "Interpreter.h"
 
 using namespace std;
 
@@ -19,6 +20,7 @@ int main() {
     Parser *CST;
     SymbolTable *Table;
     AbstractSyntaxTree *AST;
+    Interpreter *finalmodule;
 
     for(int i=1; i < 4; i++) {
         cout<<endl;
@@ -27,14 +29,21 @@ int main() {
         CST= new Parser(tokenlist);
         CST->buildCST();
         cout<<"CST built successfully"<<endl;
-        CST->tree->breadthFirstTraversal();
+        //CST->tree->breadthFirstTraversal();
         CST->tree->resetCurrentNode();
         Table=new SymbolTable(CST->getCST());
         Table->BuildTable();
         AST=new AbstractSyntaxTree(CST->getCST());
         AST->buildAST();
         cout<<"AST built Successfully"<<endl<<endl;
-        AST->getAST()->breadthFirstTraversal();
+       // AST->getAST()->breadthFirstTraversal();
+
+        finalmodule=new Interpreter(Table,AST->getAST());
+        finalmodule->startInterpreter();
+        delete finalmodule;
+        delete AST;
+        delete Table;
+        delete CST;
     }
     return 0;
 }

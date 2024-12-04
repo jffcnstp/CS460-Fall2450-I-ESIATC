@@ -41,6 +41,7 @@ struct Symbol {
     int getScope() {return scope;}
     Value getValue() {return value;}
     vector<Value> getParameterValues() {return parameterValues;}
+    vector<string>getParameterNames(){return parameterNames;}
 
     //Setters
     void setName(const string& newName) {name = newName;}

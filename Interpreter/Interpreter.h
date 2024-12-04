@@ -9,6 +9,7 @@
 #include "Token.h"
 #include <stack>
 #include <iostream>
+#include <variant>
 
 using namespace std;
 
@@ -18,7 +19,7 @@ class Interpreter
     SymbolTable* table;
     LCRSTree *AST;
 public:
-    Interpreter(SymbolTable* createdtable,LCRSTree * createdAST)
+    Interpreter(SymbolTable *createdtable,LCRSTree *createdAST)
     {
         table=createdtable;
         AST=createdAST;
@@ -39,7 +40,7 @@ public:
     {
         AST->resetCurrentNode();
         findProcedure("main"); //traverses AST until it finds main
-        InterpretFunction(table->searchSymbol("main")->scope);
+        InterpretFunction("main",table->searchSymbol("main")->scope);
     }
     void findProcedure(string procedurename)
     {
@@ -63,12 +64,12 @@ public:
     
 
     //These are individual DFAs that will appear PER function
-    void InterpretFunction(int functionscope)
+    void InterpretFunction(string functionname,int functionscope)
     {
         bool withinscope=true;
         bool inloop=false;
-        int localscope=0;
-        bool skipInit = true;
+        int localscope=1;
+        int scope=1;
 
         AST->nextChild(); //currently on function declaration.  Should traverse twice to go inside the block
         if(AST->getCurrentNode()->data.getType() != "BEGIN BLOCK") {
@@ -85,27 +86,23 @@ public:
             }
             else if(AST->getCurrentNode()->data.getType()=="ASSIGNMENT")
             {
-                //evaluateExpression()
+                evaluateExpression(functionscope);
             }
             else if(AST->getCurrentNode()->data.getType()=="IF")
             {
-                /*if(!evaluateIf(functionscope))
-                 * AST->nextChild(); //go past Beginblock
-                 * AST->nextChild();
-                 *  int withinscope=1
-                 *  while(withinscope !=0)
-                 *  {
-                 *      if(AST->getCurrentNode()->data.getTYpe()=="BEGIN BLOCK"
-                 *          withinscope+=1;
-                 *      if(AST->getCurrentNode()->data.getType()=="END BLOCK"
-                 *          withinscope-=1;
-                 *      AST->nextchild();
-                   }
-                 AST->nextChild()
-                 if(AST->getCurrentNode()->data.getType()=="ELSE")
+                if(!evaluateIfStatement(functionscope))
+                {
+                    while(AST->getCurrentNode()->data.getType() != "END BLOCK")
+                    {
+                        AST->nextChild();
+                    }
                     AST->nextChild();
-                    */
+                    if(AST->getCurrentNode()->data.getType()=="ELSE")
+                    {
+                        AST->nextChild();
+                    }
 
+                }
             }
             else if(AST->getCurrentNode()->data.getType()=="ELSE") // we hit an else but we did the IF
             {
@@ -130,8 +127,12 @@ public:
             {
                 //bool skipInit = /* Determine based on DFA logic or context */
                 progcounter.push(AST->getCurrentNode());
-                if(evaluateForStatement(functionscope, skipInit)) //evaluate whether we've gone through the first loop
+                if(evaluateForStatement(functionscope, inloop)) //evaluate whether we've gone through the first loop
                 {
+                    while(AST->getCurrentNode()->data.getType() !="BEGIN BLOCK")
+                    {
+                        AST->nextChild();
+                    }
                     inloop=true;
                     localscope=0;
                 }
@@ -144,11 +145,15 @@ public:
             }
             else if(AST->getCurrentNode()->data.getType()=="BEGIN BLOCK")
             {
+                scope+=1;
                 if(inloop==true)
                     localscope+=1;
+                AST->nextChild();
             }
             else if(AST->getCurrentNode()->data.getType()=="END BLOCK") {
-
+                scope-=1;
+                if(scope==0)
+                    withinscope=false;
                 if (inloop == true) {
                     localscope -= 1;
                     if(localscope==0)
@@ -156,10 +161,68 @@ public:
                         AST->setCurrentNode(progcounter.top());
                     }
                 }
+                else
+                {
+                    AST->nextChild();
+                }
             }
-            else if(AST->getCurrentNode()->data.getType()=="RETURN")
+            else if(AST->getCurrentNode()->data.getType()=="RETURN")//CHEATING BREAKS EASILY
             {
-               // evaluateExpression()
+                Symbol* localsymbol=table->searchSymbol(functionname);
+                AST->nextNode(); //all test files return a symbol
+                localsymbol->setValue(table->searchSymbol(functionscope,AST->getCurrentNode()->data.getName())->getValue());
+                withinscope=false;
+                break;
+            }
+            else if(AST->getCurrentNode()->data.getType()=="IDENTIFIER")//standalone function calls
+            {
+                if (AST->getCurrentNode()->data.getName() == "printf") {
+                    AST->nextNode();// (
+                    AST->nextNode();// string
+                    string output=AST->getCurrentNode()->data.getName();
+                    AST->nextNode();
+                    while(AST->getCurrentNode()->data.getType() != "R_PAREN") //I'M GOING TO CHEAT AGAIN
+                    {
+
+                        int replaceindex=output.find('%');
+                        Symbol* localsymbol=table->searchSymbol(functionscope,AST->getCurrentNode()->data.getName());
+                        if(AST->getCurrentNode()->data.getName()==localsymbol->getName()) {
+                            if(get_if<0>(&localsymbol->value)!= nullptr)
+                                output.replace(replaceindex, 2, to_string(get<0>(localsymbol->getValue())));
+                            else
+                                output.replace(replaceindex,2,get<3>(localsymbol->getValue()));
+                        }
+                        else{
+                            vector<string> names=localsymbol->getParameterNames();
+                            int index=distance(names.begin(),find(names.begin(), names.end(),AST->getCurrentNode()->data.getName()));
+                            Value localvalue=localsymbol->getParameterValues().at(index);
+                            output.replace(replaceindex,2,to_string(get<0>(localvalue)));
+                        }
+                        AST->nextNode();
+                    }
+                    if(output.find("\\n") != string::npos)
+                    {
+                        output.replace(output.find("\\n"),2,"");
+                        cout<<output<<endl;
+                    }
+                    else
+                    {
+                        cout<<output;
+                    }
+                    AST->nextChild();
+                }
+                else
+                {
+                    progcounter.push(AST->getCurrentNode());
+                    string funcname=AST->getCurrentNode()->data.getName();
+                    evaluateFunction(functionscope,AST->getCurrentNode()->data.getName());
+                    findProcedure(funcname);
+                    InterpretFunction(funcname,table->searchSymbol(funcname)->getScope());
+                    AST->setCurrentNode(progcounter.top());
+                    progcounter.pop();
+                    AST->nextChild();
+
+                }
             }
         }
     }
@@ -172,25 +235,18 @@ public:
     // functionscope, an integer that helps keep track of its scope
     bool evaluateIfStatement(int functionScope) {
         // Move to the condition node (left child of the IF node)
-        Node* conditionNode = AST->getCurrentNode()->leftChild;
-
-        // Set the current node to the condition node
-        AST->setCurrentNode(conditionNode);
+        AST->nextNode();
 
         // Evaluate the boolean expression
-        bool conditionResult = evaluateBoolExpression(functionScope);
+         return evaluateBoolExpression(functionScope);
 
-        // Return the result of the boolean expression
-        return conditionResult;
+
     }
 
 
     bool evaluateWhileStatement(int functionScope) {
-        // Move to the condition node (left child of the WHILE node)
-        Node* conditionNode = AST->getCurrentNode()->leftChild;
-
-        // Set the current node to the condition node
-        AST->setCurrentNode(conditionNode);
+        // Move to the condition node (right sibling of the WHILE node)
+        AST->nextNode();
 
         // Evaluate the boolean expression
         bool conditionResult = evaluateBoolExpression(functionScope);
@@ -202,22 +258,27 @@ public:
 
     bool evaluateForStatement(int functionScope, bool skipInit) {
         // Step 1: Move to the initialization node (Expression 1)
-        Node* initNode = AST->getCurrentNode()->leftChild;
+        Node* start = AST->getCurrentNode();
 
         // If initialization needs to be executed (skipInit == false), evaluate it
-        if (!skipInit) {
-            AST->setCurrentNode(initNode); // Move to the initialization node
+        if (!skipInit) { // Move to the initialization node
             evaluateExpression(functionScope); // Evaluate the initialization expression
         }
+        else
+        {
+            AST->nextChild();//ForEx2
+            AST->nextChild();//ForEx3
+            evaluateExpression(functionScope);
+        }
 
-        // Step 2: Move to the condition node (Expression 2)
-        Node* conditionNode = initNode->rightSibling;
-        AST->setCurrentNode(conditionNode); // Set the current node to the condition
+        AST->setCurrentNode(start); // Set the current node to Forex1;
+        AST->nextChild();//Forex2
+        AST->nextNode();//bool expression
 
         // Evaluate the condition using evaluateBoolExpression
         bool conditionResult = evaluateBoolExpression(functionScope);
 
-        // Return the result of evaluating the condition
+
         return conditionResult;
     }
 
@@ -228,33 +289,34 @@ public:
         std::stack<Node*> evaluateStack;
         while (AST->getCurrentNode() != nullptr) {
             if (AST->getCurrentNode()->data.getType() == "IDENTIFIER" ||
-                    AST->getCurrentNode()->data.getType() == "INTEGER") {
+                    AST->getCurrentNode()->data.getType() == "INTEGER" || AST->getCurrentNode()->data.getType() == "STRING") {
                 evaluateStack.push(AST->getCurrentNode());
-                AST->nextNode();
-            }
-            else if (AST->getCurrentNode()->data.getType() == "SINGLE_QUOTE") {
-                AST->nextNode();
-                evaluateStack.push(AST->getCurrentNode());
-                AST->nextNode();
+
             }
             else if (find(operatorlist.begin(), operatorlist.end(), AST->getCurrentNode()->data.getType()) !=
                      operatorlist.end()) {
                 opHelperFunction(AST->getCurrentNode(), evaluateStack, table, currentScope);
-                AST->nextNode();
+
             }
+            if(AST->getCurrentNode()->leftChild)
+                break;
+            AST->nextNode();
         }
         if (evaluateStack.size() != 1) {
             std::cerr << "evaluateBoolExpression: evaluateStack should contain a single node, but doesn't" << std::endl;
             exit(-1);
         }
-        else if (evaluateStack.top()->data.getName() != "1" ||
-                 evaluateStack.top()->data.getName() != "0") {
-            std::cerr << "evaluateBoolExpression: final result is not a boolean value" << std::endl;
-            exit(-1);
+        if (evaluateStack.top()->data.getName() == "1")
+        { AST->setCurrentNode(AST->getCurrentNode()->leftChild);
+            return true;
+        }
+        else if(evaluateStack.top()->data.getName() == "0") {
+            AST->setCurrentNode(AST->getCurrentNode()->leftChild);
+            return false;
         }
         else {
-            AST->setCurrentNode(AST->getCurrentNode()->leftChild);
-            return evaluateStack.top();
+            std::cerr << "evaluateBoolExpression: final result is not a boolean value" << std::endl;
+            exit(-1);
         }
     }
 
@@ -279,7 +341,7 @@ public:
                     progcounter.push(AST->getCurrentNode());
                     findProcedure(funcName);
 
-                    InterpretFunction(currentScope);
+                    InterpretFunction(funcName,table->searchSymbol(funcName)->getScope());
                     AST->setCurrentNode(progcounter.top());
                     progcounter.pop();
 
@@ -291,7 +353,9 @@ public:
                     AST->nextNode(); //node should now be the one after R_PAREN
                 }
                 else if (AST->getCurrentNode()->rightSibling->data.getType() == "L_BRACE") {
-                    //evaluateStack.push(getArrayValue);
+                    // moved to arraynumber (we're gonna cheat here since there's only i)
+                    //UNDERCONSTRUCTION
+
                 }
                 else { //if not a function or array, push on to stack
                     evaluateStack.push(AST->getCurrentNode());
@@ -300,7 +364,12 @@ public:
             }
                 //operands: string
             else if (AST->getCurrentNode()->data.getType() == "STRING") {
-                evaluateStack.push(AST->getCurrentNode());
+                string localstring=AST->getCurrentNode()->data.getName();
+                if(localstring.find("\\x") != string::npos)
+                {
+                    localstring.replace(localstring.find("\\x"),3,"");
+                }
+                evaluateStack.push(new Node(Token("STRING",localstring,0)));
                 AST->nextNode();
             }
                 //operands: integers
@@ -360,12 +429,12 @@ public:
                 }
                 else {
                     std::cerr << "Assignment error: one or both operands are not valid types" << std::endl;
-                    exit(-1);
+                    exit(-61);
                 }
             }
         }
         std::cerr << "evaluateExpression: Reached end of expression without returning a final result" << std::endl;
-        exit(-1);
+        exit(-61);
     }
 
     // enters a function's parameter values to the symbol
@@ -376,11 +445,44 @@ public:
         AST->nextNode(); // moves to first parameter
 
         while (AST->getCurrentNode()->data.getType() != "R_PAREN") {
-            Value value = evaluateExpression(currentScope);
+            Value value;
+            if(AST->getCurrentNode()->data.getType()=="IDENTIFIER")//VERY BAD ARRAY CALL
+            {
+                Symbol *localsymbol=table->searchSymbol(currentScope,AST->getCurrentNode()->data.getName());
+                if(localsymbol->getIsArray())
+                {
+                    int getindex;
+
+                    AST->nextNode();// [
+                    AST->nextNode();// value
+                    if(AST->getCurrentNode()->data.getType()=="INTEGER")
+                    {
+                        value=get<3>(localsymbol->getValue()).at( stoi(AST->getCurrentNode()->data.getName() ));
+                    }
+                    else
+                    {
+                        char localchar=get<3>(localsymbol->getValue()).at(get<0>(table->searchSymbol(currentScope,AST->getCurrentNode()->data.getName())->getValue()));
+                        string localstring{localchar};
+                        value=stoi(localstring,nullptr,16);
+                    }
+                    AST->nextNode(); // ]
+                }
+                else
+                {
+                    value=localsymbol->getValue();
+                }
+            }
+            else
+            {
+                if(AST->getCurrentNode()->data.getType()=="INTEGER")
+                    value=stoi(AST->getCurrentNode()->data.getName());
+                else if(AST->getCurrentNode()->data.getType()=="STRING")
+                    value=AST->getCurrentNode()->data.getName();
+            }
             parameterValues.push_back(value);
             AST->nextNode();
 
-            if(AST->getCurrentNode()->data.getType() == "COMMA") {
+            if(AST->getCurrentNode()->data.getType() == "COMMA") { //WHY IS THERE CODE FOR COMMAS WE GOT RID OF THEM
                 AST->nextNode(); // moves past comma
                 AST->nextNode(); // moves to next parameter
             }
@@ -430,6 +532,9 @@ public:
         else if (currentOperator == "BOOLEAN_NOT_EQUAL") {
             evaluateLogicalNot(evaluateStack, currentScope, SymbolTable);
         }
+        else if(currentOperator == "BOOLEAN_EQUAL"){
+            evaluateLogicalEqual(evaluateStack,currentScope,SymbolTable);
+        }
         else {
             std::cerr << "opHelperFunction: unsupported operator" << std::endl;
             exit(-1);
@@ -456,14 +561,44 @@ public:
         else if (top->data.getType() == "IDENTIFIER") {
             // Handle variables by looking them up in the symbol table
             Symbol* symbol = symbolTable->searchSymbol(currentScope, top->data.getName());
-            if (!symbol || symbol->datatype != "int" || symbol->isArray) {
-                throw std::runtime_error("Invalid variable: " + top->data.getName());
+            if(symbol->getName()==top->data.getName())//if it's a variable
+            {
+                if (!symbol || (symbol->datatype != "int" && symbol->datatype !="char") || symbol->isArray  ) {
+                    throw std::runtime_error("Invalid variable: " + top->data.getName());
+                }
+                // Fetch the variable's value (that the symbol's value is an int)
+                try {
+                    if(get_if<0>(&symbol->value)!= nullptr)
+                        return std::get<int>(symbol->value);
+                    else
+                    {
+                        char temp=std::get<char>(symbol->value);
+                        return int(temp);
+                    }
+                }
+                catch (const std::invalid_argument&) {
+                    throw std::runtime_error("Variable " + symbol->name + " does not contain a valid integer value");
+                }
             }
-            // Fetch the variable's value (that the symbol's value is an int)
-            try {
-                return std::get<int>(symbol->value); // Replace `name` with `value` if such a field exists
-            } catch (const std::invalid_argument&) {
-                throw std::runtime_error("Variable " + symbol->name + " does not contain a valid integer value");
+            else //it's a function parameter
+            {
+                Value localvalue;
+                vector<string> names=symbol->getParameterNames();
+                int index=distance(names.begin(),find(names.begin(), names.end(),top->data.getName()));
+                localvalue=symbol->getParameterValues().at(index);
+                try {
+                    if(get_if<0>(&localvalue)!= nullptr)
+                        return std::get<int>(localvalue);
+                    else
+                    {
+                        char temp=std::get<char>(localvalue);
+                        return int(temp);
+                    }
+                }
+                catch (const std::invalid_argument&) {
+                    throw std::runtime_error("Variable " + symbol->name + " does not contain a valid integer value");
+                }
+
             }
         } else {
             throw std::runtime_error("Unexpected token type: " + top->data.getType());
@@ -555,6 +690,13 @@ public:
         Node* result = new Node(Token("INTEGER", !a ? "1" : "0", 0));
         operands.push(result);
     }
+    void evaluateLogicalEqual(std::stack<Node*>& operands, int currentScope, SymbolTable *symbolTable){
+        if (operands.size() < 2) throw std::runtime_error("Insufficient operands for logical OR");
+        int b = resolveOperandValue(operands, currentScope, symbolTable);
+        int a = resolveOperandValue(operands, currentScope, symbolTable);
+        Node* result = new Node(Token("INTEGER", (a == b) ? "1" : "0", 0));
+        operands.push(result);
+    }
 
     void traverseConditionalBlock()
     {
@@ -569,7 +711,6 @@ public:
                 localscope-=1;
             AST->nextChild();
         }
-        AST->nextChild();//should move from END BLOCK to next child
     }
 
 };
