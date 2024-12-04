@@ -225,7 +225,7 @@ public:
     //PA6: evaluateBoolExpression()
     //called within an if, while, or for expression
     bool evaluateBoolExpression(int currentScope) {
-        Node* currentNode = AST->getCurrentNode();
+        Node* currentNode = AST->getCurrentNode()->rightSibling;
         std::stack<Node*> evaluateStack;
         while (currentNode != nullptr) {
             if (currentNode->data.getType() == "IDENTIFIER" ||
@@ -254,7 +254,7 @@ public:
             exit(-1);
         }
         else {
-            AST->setCurrentNode(currentNode);
+            AST->setCurrentNode(currentNode->leftChild);
             return evaluateStack.top();
         }
     }
