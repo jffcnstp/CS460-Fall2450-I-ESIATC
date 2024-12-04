@@ -285,7 +285,8 @@ public:
                     progcounter.pop();
 
                     Symbol* localSymbol = table->searchSymbol(funcName);
-                    Node* functResult = new Node(Token("INTEGER", localSymbol->name, 0));
+                    //this line is on the assumption that a function will return type int
+                    Node* functResult = new Node(Token("INTEGER", to_string(std::get<int>(localSymbol->value)), 0));
 
                     evaluateStack.push(functResult); //when the DFA finishes it should have pushed a value to its data field
                     currentNode = currentNode->rightSibling; //node should now be the one after R_PAREN
